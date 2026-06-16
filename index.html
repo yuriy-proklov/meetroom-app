@@ -414,9 +414,8 @@ function teamBadgeHTML(team) {
 
   // Load user's team
   try {
-    const users = await apiFetch('/admin/users').catch(() => []);
-    const me = users.find(u => u.id === currentUserId);
-    if (me) currentUserTeam = me.team || 'none';
+    const me = await apiFetch('/me');
+    currentUserTeam = me.team || 'none';
   } catch(e) {}
 
   render();
