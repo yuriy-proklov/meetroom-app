@@ -315,7 +315,19 @@
         <button onclick="addUser()">Добавить</button>
       </div>
     </div>
-    <div class="modal-actions" style="margin-top:16px">
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+      <div class="modal-title" style="font-size:15px;margin-bottom:12px">⚙️ Настройки уведомлений</div>
+      <div class="field">
+        <label>ID чата для уведомлений</label>
+        <input type="text" id="settingChatId" placeholder="-100123456789">
+      </div>
+      <div class="field">
+        <label>Время утреннего расписания</label>
+        <input type="time" id="settingTime" value="10:00">
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="saveSettings()">Сохранить настройки</button>
+    </div>
+    <div class="modal-actions" style="margin-top:12px">
       <button class="btn btn-secondary" onclick="closeModal('adminModal')">Закрыть</button>
     </div>
   </div>
@@ -335,6 +347,7 @@ let bookings = [];
 let currentUserId = 0;
 let currentUserName = '';
 let currentUserTeam = 'none';
+let isAdmin = false;
 let initDataRaw = '';
 let activeField = 'end';
 let activeEditField = 'eend';
@@ -416,6 +429,7 @@ function teamBadgeHTML(team) {
   try {
     const me = await apiFetch('/me');
     currentUserTeam = me.team || 'none';
+    isAdmin = me.isAdmin || false;
   } catch(e) {}
 
   render();
@@ -650,11 +664,16 @@ async function saveBooking() {
   const recurType = document.getElementById('fRecurType').value;
   if (recurType !== 'none') body.recurrence = {type:recurType, count:parseInt(document.getElementById('fRecurCount').value)||1};
   try {
-    const created = await apiFetch('/bookings','POST',body);
-    bookings = [...bookings,...created];
-    closeModal('bookModal');
-    renderCols();
-    toast(created.length>1?`Создано ${created.length} броней`:'Забронировано ✓','success');
+    const result = await apiFetch('/bookings','POST',body);
+    if (result.conflict) {
+      closeModal('bookModal');
+      toast('⏳ Время занято — запрос отправлен владельцу', '');
+    } else {
+      bookings = [...bookings,...result];
+      closeModal('bookModal');
+      renderCols();
+      toast(result.length>1?`Создано ${result.length} броней`:'Забронировано ✓','success');
+    }
   } catch(e) { toast(e.message||'Ошибка','error'); }
 }
 
@@ -676,7 +695,7 @@ function openDetail(b) {
   `;
 
   const actions = document.getElementById('detailActions');
-  if (b.userId === currentUserId) {
+  if (b.userId === currentUserId || isAdmin) {
     actions.innerHTML = '';
     const cancelBtn = document.createElement('button');
     cancelBtn.className='btn btn-secondary'; cancelBtn.textContent='Закрыть';
@@ -735,6 +754,27 @@ async function confirmDelete(b) {
 async function openAdmin() {
   openModal('adminModal');
   await loadAdminUsers();
+  await loadSettings();
+}
+
+async function loadSettings() {
+  try {
+    const s = await apiFetch('/admin/settings');
+    if (s.notify_chat_id) document.getElementById('settingChatId').value = s.notify_chat_id;
+    if (s.notify_time) document.getElementById('settingTime').value = s.notify_time;
+  } catch(e) {}
+}
+
+async function saveSettings() {
+  const chat_id = document.getElementById('settingChatId').value.trim();
+  const notify_time = document.getElementById('settingTime').value;
+  try {
+    await apiFetch('/admin/settings', 'POST', {
+      notify_chat_id: chat_id || null,
+      notify_time: notify_time || null
+    });
+    toast('Настройки сохранены ✓', 'success');
+  } catch(e) { toast(e.message||'Ошибка', 'error'); }
 }
 
 async function loadAdminUsers() {
@@ -743,9 +783,9 @@ async function loadAdminUsers() {
     const users = await apiFetch('/admin/users');
     if (!users.length) { list.innerHTML='<div style="color:var(--text-muted);font-size:13px;padding:10px 0">Список пуст</div>'; return; }
     list.innerHTML = users.map(u => `
-      <div class="admin-user-row">
+      <div class="admin-user-row" id="urow-${u.id}">
         <div class="admin-user-info">
-          <div class="admin-user-name">${esc(u.name||'—')}</div>
+          <div class="admin-user-name" onclick="editUserName(${u.id},'${esc(u.name||'')}')" style="cursor:pointer" title="Нажми чтобы изменить имя">${esc(u.name||'—')} ✏️</div>
           <div class="admin-user-id">ID: ${u.id}</div>
         </div>
         <select class="team-select" onchange="updateTeam(${u.id},this.value)">
@@ -780,6 +820,16 @@ async function addUser() {
     await loadAdminUsers();
     toast('Пользователь добавлен','success');
   } catch(e) { toast(e.message||'Ошибка','error'); }
+}
+
+async function editUserName(tgId, currentName) {
+  const name = prompt('Имя пользователя:', currentName);
+  if (name === null) return;
+  try {
+    await apiFetch(`/admin/users/${tgId}`, 'PATCH', {name: name.trim()});
+    await loadAdminUsers();
+    toast('Имя обновлено', 'success');
+  } catch(e) { toast(e.message||'Ошибка', 'error'); }
 }
 
 async function removeUser(tgId) {
