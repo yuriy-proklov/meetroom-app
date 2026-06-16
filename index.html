@@ -64,9 +64,9 @@
   .booking-chip.team-yadro{background:var(--yadro-bg);border-color:var(--yadro)}
   .booking-chip.team-iks{background:var(--iks-bg);border-color:var(--iks)}
   .booking-chip.team-none{background:var(--other-bg);border-color:var(--other)}
-  .chip-top{display:flex;align-items:center;gap:4px}
-  .chip-logo{width:14px;height:14px;flex-shrink:0;opacity:0.9}
-  .chip-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+  .chip-row{display:flex;align-items:center;gap:4px;min-width:0}
+  .chip-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+  .chip-tag{font-size:9px;font-weight:700;letter-spacing:0.3px;opacity:0.75;flex-shrink:0;white-space:nowrap}
   .chip-title{font-size:10px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .chip-time{font-size:10px;color:var(--text-muted)}
 
@@ -511,25 +511,27 @@ function createChip(b, compact) {
   const team = b.team || 'none';
   const chip = document.createElement('div');
   chip.className = `booking-chip team-${team}`;
+  const heightPx = Math.max(((em-sm)/60)*SLOT_H - 2, 18);
   chip.style.top = `${(sm/60)*SLOT_H}px`;
-  chip.style.height = `${Math.max(((em-sm)/60)*SLOT_H-2, 18)}px`;
-
-  const logoColor = team==='yadro'?'#7b7eff':team==='iks'?'#cccccc':'#3a9bdc';
-  const logoSVG = team!=='none'
-    ? `<svg style="width:12px;height:12px;flex-shrink:0;color:${logoColor}" viewBox="${team==='yadro'?'0 0 100 80':'0 0 60 40'}" xmlns="http://www.w3.org/2000/svg">${svgInner(team)}</svg>`
-    : '';
+  chip.style.height = `${heightPx}px`;
 
   const shortName = b.userName.split(' (@')[0];
   const timeStr = `${b.start.slice(11,16)}–${b.end.slice(11,16)}`;
-
-  // Show custom title if different from userName
   const hasTitle = b.title && b.title !== b.userName && b.title !== shortName;
+  const teamTag = team !== 'none'
+    ? `<span class="chip-tag">${team === 'yadro' ? 'YADRO' : 'ИКС'}</span>`
+    : '';
 
   if (compact) {
-    chip.innerHTML = `<div class="chip-top">${logoSVG}<span class="chip-name">${esc(shortName)}</span></div>`;
+    chip.innerHTML = `<div class="chip-row"><span class="chip-name">${esc(shortName)}</span>${teamTag}</div>`;
+  } else if (heightPx < 38) {
+    const parts = [esc(shortName)];
+    if (hasTitle) parts.push(esc(b.title));
+    parts.push(timeStr);
+    chip.innerHTML = `<div class="chip-row"><span class="chip-name">${parts.join(' · ')}</span>${teamTag}</div>`;
   } else {
     chip.innerHTML = `
-      <div class="chip-top">${logoSVG}<span class="chip-name">${esc(shortName)}</span></div>
+      <div class="chip-row"><span class="chip-name">${esc(shortName)}</span>${teamTag}</div>
       ${hasTitle ? `<div class="chip-title">${esc(b.title)}</div>` : ''}
       <div class="chip-time">${timeStr}</div>`;
   }
