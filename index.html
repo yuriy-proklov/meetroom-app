@@ -60,7 +60,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
   color:var(--accent-text);font-size:12px;font-weight:700;
   cursor:pointer;letter-spacing:0.3px;
 }
-.header-title{flex:1;text-align:center;font-size:15px;font-weight:600;letter-spacing:-0.3px}
+.header-title{flex:1;text-align:center;font-size:14px;font-weight:600;letter-spacing:-0.2px;min-width:0}
 .theme-btn{font-size:18px}
 
 /* ── Tabs ── */
@@ -88,7 +88,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 
 /* ── Calendar ── */
 .cal-wrap{flex:1;overflow:hidden;display:flex;flex-direction:column;position:relative}
-.grid-scroll{flex:1;overflow-y:auto;overflow-x:hidden}
+.grid-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding-top:40px}
 .grid-scroll::-webkit-scrollbar{width:3px}
 .grid-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 .time-grid{display:flex;position:relative}
@@ -299,9 +299,9 @@ select option{background:var(--surface)}
 <!-- Header -->
 <div class="header">
   <button class="icon-btn" id="prevBtn">‹</button>
-  <button class="today-pill" id="todayBtn">Сегодня</button>
-  <button class="icon-btn" id="nextBtn">›</button>
   <div class="header-title" id="headerTitle"></div>
+  <button class="icon-btn" id="nextBtn">›</button>
+  <button class="today-pill" id="todayBtn">Сегодня</button>
   <button class="icon-btn theme-btn" id="themeBtn">🌙</button>
   <button class="icon-btn" id="adminBtn" style="display:none;font-size:16px">⚙️</button>
 </div>
