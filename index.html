@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Переговорка</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  /* ── Tokens ── */
+  :root {
+    --bg: #0f0f13;
+    --surface: #1a1a22;
+    --surface2: #22222e;
+    --border: #2e2e3e;
+    --accent: #7c6ef7;
+    --accent-dim: #3d3680;
+    --accent-glow: rgba(124,110,247,0.18);
+    --text: #e8e8f0;
+    --text-muted: #7878a0;
+    --text-dim: #4a4a68;
+    --own: #7c6ef7;
+    --own-bg: rgba(124,110,247,0.15);
+    --other: #3a9bdc;
+    --other-bg: rgba(58,155,220,0.13);
+    --danger: #e05c6a;
+    --success: #4ecb87;
+    --slot-h: 56px; /* height per hour */
+    --header-h: 52px;
+    --tab-h: 44px;
+    --radius: 10px;
+    --font: -apple-system, 'SF Pro Display', 'Segoe UI', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-size: 14px;
+  }
+
+  /* ── Header ── */
+  .header {
+    height: var(--header-h);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 10px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .header-title {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    flex: 1;
+    text-align: center;
+  }
+  .header-nav {
+    display: flex;
+    gap: 4px;
+  }
+  .nav-btn {
+    width: 32px; height: 32px;
+    border: none; background: var(--surface2);
+    border-radius: 8px; color: var(--text);
+    font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .nav-btn:active { background: var(--border); }
+  .today-btn {
+    height: 32px; padding: 0 10px;
+    border: none; background: var(--accent-dim);
+    border-radius: 8px; color: var(--accent);
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    letter-spacing: 0.2px;
+  }
+
+  /* ── View tabs ── */
+  .view-tabs {
+    height: var(--tab-h);
+    background: var(--surface);
+    display: flex;
+    padding: 6px 12px;
+    gap: 6px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .view-tab {
+    flex: 1; border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 13px; font-weight: 500;
+    border-radius: 7px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .view-tab.active {
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+
+  /* ── Calendar container ── */
+  .cal-wrap {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Week header ── */
+  .week-header {
+    display: none;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .week-header.visible { display: flex; }
+  .week-header-gutter { width: 44px; flex-shrink: 0; }
+  .week-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    flex: 1;
+  }
+  .week-day-label {
+    text-align: center;
+    padding: 6px 0;
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .week-day-label .wd { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .week-day-label .dd {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 500;
+  }
+  .week-day-label.today .dd { background: var(--accent); color: #fff; }
+
+  /* ── Scrollable grid ── */
+  .grid-scroll {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+  }
+  .grid-scroll::-webkit-scrollbar { width: 3px; }
+  .grid-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .time-grid {
+    display: flex;
+    min-height: calc(24 * var(--slot-h));
+    position: relative;
+  }
+
+  .time-gutter {
+    width: 44px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .time-label {
+    position: absolute;
+    right: 8px;
+    font-size: 10px;
+    color: var(--text-dim);
+    transform: translateY(-50%);
+    white-space: nowrap;
+  }
+
+  .grid-cols {
+    flex: 1;
+    position: relative;
+  }
+
+  /* Day view: single column */
+  .view-day .grid-cols { display: block; }
+
+  /* Week view: 7 columns */
+  .view-week .grid-cols {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+  }
+
+  .grid-col {
+    position: relative;
+    border-left: 1px solid var(--border);
+  }
+  .view-day .grid-col { border-left: none; }
+
+  /* Hour lines */
+  .hour-line {
+    position: absolute;
+    left: 0; right: 0;
+    border-top: 1px solid var(--border);
+    pointer-events: none;
+  }
+  .hour-line.half { border-top-style: dashed; opacity: 0.4; }
+
+  /* Current time indicator */
+  .now-line {
+    position: absolute;
+    left: 0; right: 0;
+    border-top: 1.5px solid var(--danger);
+    pointer-events: none;
+    z-index: 10;
+  }
+  .now-line::before {
+    content: '';
+    position: absolute;
+    left: -4px; top: -4px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--danger);
+  }
+
+  /* Tap zone */
+  .tap-zone {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    cursor: pointer;
+  }
+
+  /* ── Booking chips ── */
+  .booking-chip {
+    position: absolute;
+    left: 2px; right: 2px;
+    border-radius: 6px;
+    padding: 3px 6px;
+    font-size: 11px;
+    line-height: 1.3;
+    overflow: hidden;
+    z-index: 5;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.1s;
+    border-left: 3px solid;
+    user-select: none;
+  }
+  .booking-chip:active { transform: scale(0.97); filter: brightness(1.15); }
+  .booking-chip.own {
+    background: var(--own-bg);
+    border-color: var(--own);
+    color: var(--text);
+  }
+  .booking-chip.other {
+    background: var(--other-bg);
+    border-color: var(--other);
+    color: var(--text);
+  }
+  .chip-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chip-who { color: var(--text-muted); font-size: 10px; margin-top: 1px; }
+  .chip-time { color: var(--text-muted); font-size: 10px; }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: 100;
+    display: flex; align-items: flex-end;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal {
+    background: var(--surface);
+    border-radius: 16px 16px 0 0;
+    width: 100%;
+    max-height: 92dvh;
+    overflow-y: auto;
+    padding: 16px;
+    transform: translateY(100%);
+    transition: transform 0.25s cubic-bezier(0.32,0.72,0,1);
+    border-top: 1px solid var(--border);
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+
+  .modal-handle {
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 16px;
+  }
+  .modal-title {
+    font-size: 17px; font-weight: 700;
+    margin-bottom: 16px;
+    letter-spacing: -0.3px;
+  }
+
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .field input, .field select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 15px;
+    padding: 10px 12px;
+    outline: none;
+    font-family: var(--font);
+    -webkit-appearance: none;
+    transition: border-color 0.15s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--accent); }
+
+  .time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .recur-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .modal-actions {
+    display: flex; gap: 10px;
+    margin-top: 20px;
+  }
+  .btn {
+    flex: 1; padding: 13px;
+    border: none; border-radius: var(--radius);
+    font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: filter 0.15s, transform 0.1s;
+    font-family: var(--font);
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:active { filter: brightness(1.1); }
+  .btn-secondary { background: var(--surface2); color: var(--text-muted); }
+  .btn-danger { background: rgba(224,92,106,0.15); color: var(--danger); }
+
+  /* Booking detail modal */
+  .detail-info { padding: 10px 0; }
+  .detail-row {
+    display: flex; align-items: flex-start;
+    gap: 10px; padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-icon { font-size: 16px; width: 20px; flex-shrink: 0; }
+  .detail-text { flex: 1; }
+  .detail-label { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; }
+  .detail-value { font-size: 14px; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 80px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 13px;
+    opacity: 0;
+    transition: all 0.25s;
+    z-index: 200;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .toast.show {
+    opacity: 1; transform: translateX(-50%) translateY(0);
+  }
+  .toast.error { border-color: var(--danger); color: var(--danger); }
+  .toast.success { border-color: var(--success); color: var(--success); }
+
+  /* Loading */
+  .loading {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg);
+    z-index: 50;
+    flex-direction: column; gap: 12px;
+  }
+  .spinner {
+    width: 28px; height: 28px;
+    border: 2.5px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .blocked-screen {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 12px; z-index: 999;
+    padding: 32px;
+    text-align: center;
+  }
+  .blocked-icon { font-size: 48px; }
+  .blocked-title { font-size: 18px; font-weight: 700; }
+  .blocked-text { color: var(--text-muted); font-size: 14px; line-height: 1.5; }
+
+  select option { background: #1a1a22; }
+</style>
+</head>
+<body>
+
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <span style="color:var(--text-muted);font-size:13px">Загрузка…</span>
+</div>
+
+<div class="blocked-screen" id="blocked" style="display:none">
+  <div class="blocked-icon">🔒</div>
+  <div class="blocked-title">Нет доступа</div>
+  <div class="blocked-text">Этот инструмент доступен только авторизованным пользователям.</div>
+</div>
+
+<!-- Header -->
+<div class="header" id="header">
+  <div class="header-nav">
+    <button class="nav-btn" id="prevBtn">‹</button>
+    <button class="today-btn" id="todayBtn">Сегодня</button>
+    <button class="nav-btn" id="nextBtn">›</button>
+  </div>
+  <div class="header-title" id="headerTitle"></div>
+</div>
+
+<!-- View tabs -->
+<div class="view-tabs">
+  <button class="view-tab active" data-view="day">День</button>
+  <button class="view-tab" data-view="week">Неделя</button>
+</div>
+
+<!-- Week header (visible in week view) -->
+<div class="week-header" id="weekHeader">
+  <div class="week-header-gutter"></div>
+  <div class="week-days" id="weekDays"></div>
+</div>
+
+<!-- Calendar -->
+<div class="cal-wrap">
+  <div class="grid-scroll" id="gridScroll">
+    <div class="time-grid view-day" id="timeGrid">
+      <div class="time-gutter" id="timeGutter"></div>
+      <div class="grid-cols" id="gridCols"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Create/Edit modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="editModalTitle">Новая бронь</div>
+    <div class="field">
+      <label>Название</label>
+      <input type="text" id="fTitle" placeholder="Встреча, звонок…" maxlength="80">
+    </div>
+    <div class="field time-row">
+      <div>
+        <label>Начало</label>
+        <input type="time" id="fStart" step="900">
+      </div>
+      <div>
+        <label>Конец</label>
+        <input type="time" id="fEnd" step="900">
+      </div>
+    </div>
+    <div class="field">
+      <label>Повтор</label>
+      <select id="fRecurType">
+        <option value="none">Без повтора</option>
+        <option value="daily">Ежедневно</option>
+        <option value="weekly">Еженедельно</option>
+        <option value="monthly">Ежемесячно</option>
+      </select>
+    </div>
+    <div class="field" id="fRecurCountWrap" style="display:none">
+      <label>Количество повторений</label>
+      <input type="number" id="fRecurCount" min="2" max="365" value="5">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="editCancelBtn">Отмена</button>
+      <button class="btn btn-primary" id="editSaveBtn">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail modal -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="detailTitle"></div>
+    <div class="detail-info" id="detailInfo"></div>
+    <div class="modal-actions" id="detailActions"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────────
+const WORKER_URL = 'http://103.214.71.137:8000'; // e.g. https://meetroom.yourname.workers.dev
+
+// ── State ─────────────────────────────────────────────────────────────────────
+const tg = window.Telegram?.WebApp;
+let currentView = 'day';
+let cursor = new Date(); // day or week anchor
+cursor.setHours(0,0,0,0);
+let bookings = []; // loaded bookings
+let editingId = null; // null = create
+let pendingTapInfo = null; // {date, hour, min} for new booking
+let currentUserId = null;
+let initDataRaw = '';
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+(async function init() {
+  tg?.expand();
+  tg?.setHeaderColor('#1a1a22');
+  tg?.enableClosingConfirmation();
+
+  initDataRaw = tg?.initData || '';
+  const user = tg?.initDataUnsafe?.user;
+  currentUserId = user?.id || 0;
+
+  // Slight delay so Telegram renders
+  await sleep(300);
+  document.getElementById('loading').style.display = 'none';
+
+  render();
+  await loadBookings();
+  scrollToNow();
+  setupEventListeners();
+})();
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() {
+  renderHeader();
+  renderGrid();
+}
+
+function renderHeader() {
+  const el = document.getElementById('headerTitle');
+  if (currentView === 'day') {
+    const opts = { weekday: 'long', day: 'numeric', month: 'long' };
+    el.textContent = formatDate(cursor, opts);
+  } else {
+    const end = addDays(cursor, 6);
+    el.textContent = `${cursor.getDate()} — ${end.getDate()} ${end.toLocaleDateString('ru', { month: 'long' })}`;
+  }
+
+  // Week header visibility
+  const wh = document.getElementById('weekHeader');
+  wh.classList.toggle('visible', currentView === 'week');
+
+  if (currentView === 'week') {
+    renderWeekDayLabels();
+  }
+}
+
+function renderWeekDayLabels() {
+  const container = document.getElementById('weekDays');
+  container.innerHTML = '';
+  const today = todayDate();
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(cursor, i);
+    const isToday = d.toDateString() === today.toDateString();
+    const div = document.createElement('div');
+    div.className = 'week-day-label' + (isToday ? ' today' : '');
+    div.innerHTML = `<span class="wd">${d.toLocaleDateString('ru',{weekday:'short'})}</span>
+      <span class="dd">${d.getDate()}</span>`;
+    container.appendChild(div);
+  }
+}
+
+function renderGrid() {
+  const grid = document.getElementById('timeGrid');
+  grid.className = `time-grid view-${currentView}`;
+
+  renderGutter();
+  renderCols();
+  renderNowLine();
+}
+
+function renderGutter() {
+  const el = document.getElementById('timeGutter');
+  el.innerHTML = '';
+  for (let h = 0; h <= 23; h++) {
+    const label = document.createElement('div');
+    label.className = 'time-label';
+    label.style.top = `${h * SLOT_H}px`;
+    label.textContent = h === 0 ? '' : `${String(h).padStart(2,'0')}:00`;
+    el.appendChild(label);
+  }
+}
+
+const SLOT_H = 56; // px per hour (matches CSS --slot-h)
+
+function renderCols() {
+  const container = document.getElementById('gridCols');
+  container.innerHTML = '';
+
+  const numCols = currentView === 'week' ? 7 : 1;
+  const colHeight = 24 * SLOT_H;
+
+  for (let c = 0; c < numCols; c++) {
+    const date = addDays(cursor, c);
+    const dateStr = toDateStr(date);
+
+    const col = document.createElement('div');
+    col.className = 'grid-col';
+    col.style.height = colHeight + 'px';
+
+    // Hour lines
+    for (let h = 0; h < 24; h++) {
+      const line = document.createElement('div');
+      line.className = 'hour-line';
+      line.style.top = `${h * SLOT_H}px`;
+      col.appendChild(line);
+      // Half-hour line
+      const half = document.createElement('div');
+      half.className = 'hour-line half';
+      half.style.top = `${h * SLOT_H + SLOT_H / 2}px`;
+      col.appendChild(half);
+    }
+
+    // Tap zone
+    const tap = document.createElement('div');
+    tap.className = 'tap-zone';
+    tap.addEventListener('click', e => handleColTap(e, col, date));
+    col.appendChild(tap);
+
+    // Bookings for this date
+    const dayBookings = getBookingsForDate(dateStr);
+    dayBookings.forEach(b => {
+      const chip = createChip(b, numCols > 1);
+      if (chip) col.appendChild(chip);
+    });
+
+    container.appendChild(col);
+  }
+}
+
+function createChip(b, compact) {
+  const startMins = timeToMins(b.start.slice(11,16));
+  const endMins = timeToMins(b.end.slice(11,16));
+  if (endMins <= startMins) return null; // cross-midnight: skip for now
+
+  const top = (startMins / 60) * SLOT_H;
+  const height = Math.max(((endMins - startMins) / 60) * SLOT_H - 2, 18);
+
+  const chip = document.createElement('div');
+  chip.className = 'booking-chip ' + (b.userId === currentUserId ? 'own' : 'other');
+  chip.style.top = top + 'px';
+  chip.style.height = height + 'px';
+
+  const timeStr = `${b.start.slice(11,16)}–${b.end.slice(11,16)}`;
+  chip.innerHTML = compact
+    ? `<div class="chip-title">${esc(b.title)}</div>`
+    : `<div class="chip-title">${esc(b.title)}</div>
+       <div class="chip-who">${esc(b.userName)}</div>
+       <div class="chip-time">${timeStr}</div>`;
+
+  chip.addEventListener('click', e => { e.stopPropagation(); openDetail(b); });
+  return chip;
+}
+
+function renderNowLine() {
+  // Remove old
+  document.querySelectorAll('.now-line').forEach(e => e.remove());
+
+  const now = new Date();
+  const todayStr = toDateStr(now);
+  const mins = now.getHours() * 60 + now.getMinutes();
+  const top = (mins / 60) * SLOT_H;
+
+  if (currentView === 'day') {
+    if (toDateStr(cursor) !== todayStr) return;
+    const col = document.querySelector('.grid-col');
+    if (!col) return;
+    const line = document.createElement('div');
+    line.className = 'now-line';
+    line.style.top = top + 'px';
+    col.appendChild(line);
+  } else {
+    for (let i = 0; i < 7; i++) {
+      if (toDateStr(addDays(cursor, i)) === todayStr) {
+        const col = document.querySelectorAll('.grid-col')[i];
+        if (!col) break;
+        const line = document.createElement('div');
+        line.className = 'now-line';
+        line.style.top = top + 'px';
+        col.appendChild(line);
+        break;
+      }
+    }
+  }
+}
+
+// ── Data ──────────────────────────────────────────────────────────────────────
+async function loadBookings() {
+  let from, to;
+  if (currentView === 'day') {
+    from = to = toDateStr(cursor);
+  } else {
+    from = toDateStr(cursor);
+    to = toDateStr(addDays(cursor, 6));
+  }
+  // Load ±30 days buffer regardless for smooth navigation
+  const bufFrom = toDateStr(addDays(cursor, -30));
+  const bufTo = toDateStr(addDays(cursor, 37));
+
+  try {
+    const res = await apiFetch(`/bookings?from=${bufFrom}&to=${bufTo}`);
+    bookings = res;
+    renderCols();
+    renderNowLine();
+  } catch(e) {
+    toast('Ошибка загрузки', 'error');
+  }
+}
+
+function getBookingsForDate(dateStr) {
+  return bookings.filter(b => b.start.startsWith(dateStr));
+}
+
+// ── Tap handler ───────────────────────────────────────────────────────────────
+function handleColTap(e, col, date) {
+  const rect = col.getBoundingClientRect();
+  const y = e.clientY - rect.top;
+  const totalMins = Math.round((y / SLOT_H * 60) / 15) * 15;
+  const h = Math.floor(totalMins / 60);
+  const m = totalMins % 60;
+
+  pendingTapInfo = { date, hour: h, minute: m };
+  openCreateModal(date, h, m);
+}
+
+// ── Edit modal ────────────────────────────────────────────────────────────────
+function openCreateModal(date, hour, minute) {
+  editingId = null;
+  document.getElementById('editModalTitle').textContent = 'Новая бронь';
+  document.getElementById('fTitle').value = '';
+  const start = `${pad(hour)}:${pad(minute)}`;
+  const endH = Math.floor((hour * 60 + minute + 60) / 60);
+  const endM = (hour * 60 + minute + 60) % 60;
+  document.getElementById('fStart').value = start;
+  document.getElementById('fEnd').value = `${pad(Math.min(endH,23))}:${pad(endM)}`;
+  document.getElementById('fRecurType').value = 'none';
+  document.getElementById('fRecurCount').value = '5';
+  document.getElementById('fRecurCountWrap').style.display = 'none';
+  openModal('editModal');
+}
+
+function openEditModal(b) {
+  editingId = b.id;
+  document.getElementById('editModalTitle').textContent = 'Редактировать';
+  document.getElementById('fTitle').value = b.title;
+  document.getElementById('fStart').value = b.start.slice(11,16);
+  document.getElementById('fEnd').value = b.end.slice(11,16);
+  document.getElementById('fRecurType').value = 'none';
+  document.getElementById('fRecurCount').value = '5';
+  document.getElementById('fRecurCountWrap').style.display = 'none';
+  openModal('editModal');
+}
+
+async function saveBooking() {
+  const title = document.getElementById('fTitle').value.trim();
+  const startTime = document.getElementById('fStart').value;
+  const endTime = document.getElementById('fEnd').value;
+  const recurType = document.getElementById('fRecurType').value;
+  const recurCount = parseInt(document.getElementById('fRecurCount').value) || 1;
+
+  if (!title) { toast('Введите название', 'error'); return; }
+  if (!startTime || !endTime) { toast('Укажите время', 'error'); return; }
+  if (startTime >= endTime) { toast('Конец должен быть позже начала', 'error'); return; }
+
+  const dateStr = editingId
+    ? bookings.find(b => b.id === editingId)?.start.slice(0,10)
+    : toDateStr(pendingTapInfo?.date || cursor);
+
+  const startISO = `${dateStr}T${startTime}:00.000Z`;
+  const endISO = `${dateStr}T${endTime}:00.000Z`;
+
+  const body = {
+    title,
+    start: startISO,
+    end: endISO,
+    recurrence: recurType === 'none' ? null : { type: recurType, count: recurCount }
+  };
+
+  try {
+    if (editingId) {
+      const updated = await apiFetch(`/bookings/${editingId}`, 'PUT', body);
+      bookings = bookings.map(b => b.id === editingId ? updated : b);
+      toast('Обновлено', 'success');
+    } else {
+      const created = await apiFetch('/bookings', 'POST', body);
+      bookings = [...bookings, ...created];
+      toast(created.length > 1 ? `Создано ${created.length} броней` : 'Забронировано', 'success');
+    }
+    closeModal('editModal');
+    renderCols();
+  } catch(e) {
+    toast(e.message || 'Ошибка', 'error');
+  }
+}
+
+// ── Detail modal ──────────────────────────────────────────────────────────────
+function openDetail(b) {
+  document.getElementById('detailTitle').textContent = b.title;
+
+  const startDt = new Date(b.start);
+  const endDt = new Date(b.end);
+  const dateStr = startDt.toLocaleDateString('ru', { weekday:'long', day:'numeric', month:'long' });
+  const timeStr = `${b.start.slice(11,16)} — ${b.end.slice(11,16)}`;
+  const durMins = (endDt - startDt) / 60000;
+  const durStr = durMins >= 60 ? `${Math.floor(durMins/60)} ч ${durMins%60 ? durMins%60+' мин':''}` : `${durMins} мин`;
+
+  document.getElementById('detailInfo').innerHTML = `
+    <div class="detail-row">
+      <div class="detail-icon">📅</div>
+      <div class="detail-text">
+        <div class="detail-label">Дата</div>
+        <div class="detail-value">${dateStr}</div>
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-icon">🕐</div>
+      <div class="detail-text">
+        <div class="detail-label">Время</div>
+        <div class="detail-value">${timeStr} · ${durStr}</div>
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-icon">👤</div>
+      <div class="detail-text">
+        <div class="detail-label">Кто забронировал</div>
+        <div class="detail-value">${esc(b.userName)}</div>
+      </div>
+    </div>
+  `;
+
+  const actions = document.getElementById('detailActions');
+  if (b.userId === currentUserId) {
+    actions.innerHTML = '';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn btn-secondary';
+    cancelBtn.textContent = 'Закрыть';
+    cancelBtn.onclick = () => closeModal('detailModal');
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn btn-primary';
+    editBtn.textContent = 'Изменить';
+    editBtn.onclick = () => { closeModal('detailModal'); openEditModal(b); };
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn btn-danger';
+    delBtn.style.flex = '0 0 auto';
+    delBtn.textContent = '🗑';
+    delBtn.onclick = () => confirmDelete(b);
+    actions.appendChild(cancelBtn);
+    actions.appendChild(editBtn);
+    actions.appendChild(delBtn);
+  } else {
+    actions.innerHTML = `<button class="btn btn-secondary" style="flex:1" onclick="closeModal('detailModal')">Закрыть</button>`;
+  }
+
+  openModal('detailModal');
+}
+
+async function confirmDelete(b) {
+  if (!confirm(`Удалить «${b.title}»?`)) return;
+  try {
+    await apiFetch(`/bookings/${b.id}`, 'DELETE');
+    bookings = bookings.filter(x => x.id !== b.id);
+    closeModal('detailModal');
+    renderCols();
+    toast('Бронь удалена', 'success');
+  } catch(e) {
+    toast(e.message || 'Ошибка', 'error');
+  }
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function navigate(dir) {
+  if (currentView === 'day') {
+    cursor = addDays(cursor, dir);
+  } else {
+    cursor = addDays(cursor, dir * 7);
+  }
+  render();
+  loadBookings();
+}
+
+function goToday() {
+  cursor = todayDate();
+  render();
+  loadBookings();
+  scrollToNow();
+}
+
+function scrollToNow() {
+  const now = new Date();
+  const mins = now.getHours() * 60 + now.getMinutes();
+  const top = Math.max((mins / 60) * SLOT_H - 80, 0);
+  document.getElementById('gridScroll').scrollTo({ top, behavior: 'smooth' });
+}
+
+// ── Event listeners ───────────────────────────────────────────────────────────
+function setupEventListeners() {
+  document.getElementById('prevBtn').addEventListener('click', () => navigate(-1));
+  document.getElementById('nextBtn').addEventListener('click', () => navigate(1));
+  document.getElementById('todayBtn').addEventListener('click', goToday);
+
+  document.querySelectorAll('.view-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.view-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentView = btn.dataset.view;
+      if (currentView === 'week') {
+        // Align cursor to Monday
+        const day = cursor.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        cursor = addDays(cursor, diff);
+      }
+      render();
+      loadBookings();
+    });
+  });
+
+  document.getElementById('fRecurType').addEventListener('change', e => {
+    document.getElementById('fRecurCountWrap').style.display =
+      e.target.value === 'none' ? 'none' : 'block';
+  });
+
+  document.getElementById('editSaveBtn').addEventListener('click', saveBooking);
+  document.getElementById('editCancelBtn').addEventListener('click', () => closeModal('editModal'));
+
+  // Close modals on overlay tap
+  ['editModal', 'detailModal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', e => {
+      if (e.target.id === id) closeModal(id);
+    });
+  });
+
+  // Refresh now-line every minute
+  setInterval(() => renderNowLine(), 60000);
+}
+
+// ── Modal helpers ─────────────────────────────────────────────────────────────
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+async function apiFetch(path, method = 'GET', body = null) {
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Init-Data': initDataRaw,
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(WORKER_URL + path, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Ошибка сервера');
+  return data;
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+let toastTimer;
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function addDays(date, n) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + n);
+  return d;
+}
+function todayDate() {
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  return d;
+}
+function toDateStr(date) {
+  return date.toISOString().slice(0,10);
+}
+function pad(n) { return String(n).padStart(2,'0'); }
+function timeToMins(t) {
+  const [h,m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+function formatDate(d, opts) {
+  return d.toLocaleDateString('ru', opts);
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
