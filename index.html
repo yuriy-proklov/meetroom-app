@@ -1,196 +1,324 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Переговорка</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-  :root {
-    --bg:#0f0f13; --surface:#1a1a22; --surface2:#22222e; --border:#2e2e3e;
-    --accent:#7c6ef7; --accent-dim:#3d3680; --text:#e8e8f0;
-    --text-muted:#7878a0; --text-dim:#4a4a68;
-    --yadro:#2b2ef5; --yadro-bg:rgba(43,46,245,0.13);
-    --iks:#e8e8e8; --iks-bg:rgba(255,255,255,0.08);
-    --other:#3a9bdc; --other-bg:rgba(58,155,220,0.13);
-    --danger:#e05c6a; --success:#4ecb87;
-    --slot-h:56px; --header-h:52px; --tab-h:44px;
-    --radius:10px; --font:-apple-system,'SF Pro Display','Segoe UI',sans-serif;
-  }
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  body{font-family:var(--font);background:var(--bg);color:var(--text);height:100dvh;display:flex;flex-direction:column;overflow:hidden;font-size:14px}
+/* ── Themes ── */
+:root {
+  --radius:12px;
+  --font:-apple-system,'SF Pro Display','Segoe UI',sans-serif;
+  --slot-h:64px;
+  --day-start:10; /* first visible hour */
+  --day-end:20;   /* last visible hour */
+}
+[data-theme="dark"] {
+  --bg:#111116; --surface:#1c1c24; --surface2:#26262f; --border:#32323f;
+  --accent:#6b63f5; --accent-dim:rgba(107,99,245,0.18); --accent-text:#a89fff;
+  --text:#eeeef5; --text-muted:#8080a8; --text-dim:#444460;
+  --yadro:#4f7fff; --yadro-bg:rgba(79,127,255,0.14); --yadro-border:#4f7fff;
+  --iks:#ff8c42; --iks-bg:rgba(255,140,66,0.13); --iks-border:#ff8c42;
+  --other:#50c8a0; --other-bg:rgba(80,200,160,0.12); --other-border:#50c8a0;
+  --danger:#ff5c6a; --success:#3ecf88;
+  --now-line:#ff5c6a;
+  --shadow:0 4px 24px rgba(0,0,0,0.4);
+}
+[data-theme="light"] {
+  --bg:#f2f3f7; --surface:#ffffff; --surface2:#f0f0f5; --border:#e0e0eb;
+  --accent:#5b54e8; --accent-dim:rgba(91,84,232,0.1); --accent-text:#5b54e8;
+  --text:#1a1a2e; --text-muted:#6060a0; --text-dim:#b0b0c8;
+  --yadro:#2563eb; --yadro-bg:rgba(37,99,235,0.1); --yadro-border:#2563eb;
+  --iks:#ea6c00; --iks-bg:rgba(234,108,0,0.1); --iks-border:#ea6c00;
+  --other:#0d9488; --other-bg:rgba(13,148,136,0.1); --other-border:#0d9488;
+  --danger:#e02d3c; --success:#16a34a;
+  --now-line:#e02d3c;
+  --shadow:0 4px 24px rgba(0,0,0,0.08);
+}
 
-  .header{height:var(--header-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:8px;flex-shrink:0}
-  .header-title{font-size:15px;font-weight:600;letter-spacing:-0.2px;flex:1;text-align:center}
-  .nav-btn{width:32px;height:32px;border:none;background:var(--surface2);border-radius:8px;color:var(--text);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-  .nav-btn:active{background:var(--border)}
-  .today-btn{height:32px;padding:0 10px;border:none;background:var(--accent-dim);border-radius:8px;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer}
-  .admin-btn{width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:18px;cursor:pointer;flex-shrink:0}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex;flex-direction:column;font-size:14px;transition:background 0.2s,color 0.2s}
 
-  .view-tabs{height:var(--tab-h);background:var(--surface);display:flex;padding:6px 12px;gap:6px;flex-shrink:0;border-bottom:1px solid var(--border)}
-  .view-tab{flex:1;border:none;background:transparent;color:var(--text-muted);font-size:13px;font-weight:500;border-radius:7px;cursor:pointer;transition:all 0.15s}
-  .view-tab.active{background:var(--accent);color:#fff;font-weight:600}
+/* ── Header ── */
+.header{
+  height:52px;background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 12px;gap:6px;flex-shrink:0;
+}
+.icon-btn{
+  width:36px;height:36px;border:none;background:var(--surface2);
+  border-radius:10px;color:var(--text);font-size:15px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:background 0.15s;
+}
+.icon-btn:active{background:var(--border)}
+.today-pill{
+  height:32px;padding:0 12px;border:none;
+  background:var(--accent-dim);border-radius:20px;
+  color:var(--accent-text);font-size:12px;font-weight:700;
+  cursor:pointer;letter-spacing:0.3px;
+}
+.header-title{flex:1;text-align:center;font-size:15px;font-weight:600;letter-spacing:-0.3px}
+.theme-btn{font-size:18px}
 
-  .week-header{display:none;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
-  .week-header.visible{display:flex}
-  .week-header-gutter{width:44px;flex-shrink:0}
-  .week-days{display:grid;grid-template-columns:repeat(7,1fr);flex:1}
-  .week-day-label{text-align:center;padding:6px 0;font-size:11px;color:var(--text-muted);display:flex;flex-direction:column;align-items:center;gap:2px}
-  .week-day-label .wd{font-size:10px;text-transform:uppercase;letter-spacing:0.5px}
-  .week-day-label .dd{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500}
-  .week-day-label.today .dd{background:var(--accent);color:#fff}
+/* ── Tabs ── */
+.view-tabs{
+  height:42px;background:var(--surface);
+  display:flex;padding:5px 12px;gap:4px;flex-shrink:0;
+  border-bottom:1px solid var(--border);
+}
+.tab{
+  flex:1;border:none;background:transparent;
+  color:var(--text-muted);font-size:13px;font-weight:500;
+  border-radius:8px;cursor:pointer;transition:all 0.15s;
+}
+.tab.active{background:var(--accent);color:#fff;font-weight:700}
 
-  .cal-wrap{flex:1;overflow:hidden;display:flex;flex-direction:column}
-  .grid-scroll{flex:1;overflow-y:auto;overflow-x:hidden;position:relative}
-  .grid-scroll::-webkit-scrollbar{width:3px}
-  .grid-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-  .time-grid{display:flex;min-height:calc(24 * var(--slot-h));position:relative}
-  .time-gutter{width:44px;flex-shrink:0;position:relative}
-  .time-label{position:absolute;right:8px;font-size:10px;color:var(--text-dim);transform:translateY(-50%);white-space:nowrap}
-  .grid-cols{flex:1;position:relative}
-  .view-day .grid-cols{display:block}
-  .view-week .grid-cols{display:grid;grid-template-columns:repeat(7,1fr)}
-  .grid-col{position:relative;border-left:1px solid var(--border)}
-  .view-day .grid-col{border-left:none}
-  .hour-line{position:absolute;left:0;right:0;border-top:1px solid var(--border);pointer-events:none}
-  .hour-line.half{border-top-style:dashed;opacity:0.4}
-  .now-line{position:absolute;left:0;right:0;border-top:1.5px solid var(--danger);pointer-events:none;z-index:10}
-  .now-line::before{content:'';position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:50%;background:var(--danger)}
-  .tap-zone{position:absolute;inset:0;z-index:1;cursor:pointer}
+/* ── Week header ── */
+.week-header{display:none;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.week-header.vis{display:flex}
+.week-gutter{width:48px;flex-shrink:0}
+.week-days{display:grid;grid-template-columns:repeat(7,1fr);flex:1}
+.wday{text-align:center;padding:5px 0;display:flex;flex-direction:column;align-items:center;gap:2px}
+.wday .wd{font-size:10px;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.5px}
+.wday .dd{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:var(--text-muted)}
+.wday.today .dd{background:var(--accent);color:#fff}
 
-  /* Chips */
-  .booking-chip{position:absolute;left:2px;right:2px;border-radius:6px;padding:3px 5px 3px 7px;font-size:11px;line-height:1.3;overflow:hidden;z-index:5;cursor:pointer;border-left:3px solid;user-select:none;transition:filter 0.15s;display:flex;flex-direction:column;gap:1px}
-  .booking-chip:active{filter:brightness(1.2)}
-  .booking-chip.team-yadro{background:var(--yadro-bg);border-color:var(--yadro)}
-  .booking-chip.team-iks{background:var(--iks-bg);border-color:var(--iks)}
-  .booking-chip.team-none{background:var(--other-bg);border-color:var(--other)}
-  .chip-row{display:flex;align-items:center;gap:4px;min-width:0}
-  .chip-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
-  .chip-tag{font-size:9px;font-weight:700;letter-spacing:0.3px;opacity:0.75;flex-shrink:0;white-space:nowrap}
-  .chip-title{font-size:10px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .chip-time{font-size:10px;color:var(--text-muted)}
+/* ── Calendar ── */
+.cal-wrap{flex:1;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.grid-scroll{flex:1;overflow-y:auto;overflow-x:hidden}
+.grid-scroll::-webkit-scrollbar{width:3px}
+.grid-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.time-grid{display:flex;position:relative}
+.time-gutter{width:48px;flex-shrink:0;position:relative;padding-top:0}
+.time-label{
+  position:absolute;right:8px;font-size:10px;
+  color:var(--text-dim);transform:translateY(-50%);white-space:nowrap;
+}
+.grid-cols{flex:1;position:relative}
+.view-day .grid-cols{display:block}
+.view-week .grid-cols{display:grid;grid-template-columns:repeat(7,1fr)}
+.grid-col{position:relative;border-left:1px solid var(--border)}
+.view-day .grid-col{border-left:none}
+.hour-line{position:absolute;left:0;right:0;border-top:1px solid var(--border);pointer-events:none}
+.hour-line.half{border-top-style:dashed;opacity:0.35}
+.now-line{position:absolute;left:0;right:0;border-top:2px solid var(--now-line);pointer-events:none;z-index:10}
+.now-line::before{content:'';position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:50%;background:var(--now-line)}
+.tap-zone{position:absolute;inset:0;z-index:1;cursor:pointer}
 
-  /* Modal */
-  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:100;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity 0.2s}
-  .modal-overlay.open{opacity:1;pointer-events:all}
-  .modal{background:var(--surface);border-radius:16px 16px 0 0;width:100%;max-height:92dvh;overflow-y:auto;padding:16px;transform:translateY(100%);transition:transform 0.25s cubic-bezier(0.32,0.72,0,1);border-top:1px solid var(--border)}
-  .modal-overlay.open .modal{transform:translateY(0)}
-  .modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
-  .modal-title{font-size:17px;font-weight:700;margin-bottom:16px;letter-spacing:-0.3px}
+/* ── Chips ── */
+.chip{
+  position:absolute;left:3px;right:3px;
+  border-radius:8px;padding:4px 7px;
+  font-size:11px;overflow:hidden;z-index:5;cursor:pointer;
+  border-left:3px solid;user-select:none;
+  transition:filter 0.12s,transform 0.1s;
+  display:flex;flex-direction:column;gap:1px;
+}
+.chip:active{transform:scale(0.97);filter:brightness(1.15)}
+.chip.yadro{background:var(--yadro-bg);border-color:var(--yadro)}
+.chip.iks{background:var(--iks-bg);border-color:var(--iks)}
+.chip.other{background:var(--other-bg);border-color:var(--other)}
+.chip-row{display:flex;align-items:center;gap:4px;min-width:0}
+.chip-name{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;line-height:1.3}
+.chip-tag{
+  font-size:8px;font-weight:800;letter-spacing:0.5px;
+  padding:1px 4px;border-radius:3px;flex-shrink:0;
+}
+.chip.yadro .chip-tag{background:var(--yadro);color:#fff}
+.chip.iks .chip-tag{background:var(--iks);color:#fff}
+.chip-sub{font-size:10px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
 
-  .time-picker{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-bottom:12px}
-  .time-block{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px;text-align:center;cursor:pointer;transition:border-color 0.15s}
-  .time-block-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px}
-  .time-block-value{font-size:22px;font-weight:700;letter-spacing:-0.5px}
-  .time-arrow{text-align:center;color:var(--text-dim);font-size:18px}
-  .duration-label{text-align:center;color:var(--text-muted);font-size:12px;margin-bottom:12px;min-height:16px}
+/* ── FAB ── */
+.fab{
+  position:absolute;right:16px;bottom:20px;
+  width:56px;height:56px;
+  background:var(--accent);border:none;border-radius:50%;
+  color:#fff;font-size:28px;font-weight:300;
+  cursor:pointer;box-shadow:0 4px 20px rgba(107,99,245,0.45);
+  display:flex;align-items:center;justify-content:center;
+  transition:transform 0.15s,box-shadow 0.15s;z-index:20;
+}
+.fab:active{transform:scale(0.93);box-shadow:0 2px 10px rgba(107,99,245,0.3)}
 
-  .time-adjust{display:flex;gap:5px;margin-bottom:16px}
-  .adj-btn{flex:1;padding:8px 2px;border:none;background:var(--surface2);border-radius:8px;color:var(--text-muted);font-size:12px;cursor:pointer;text-align:center}
-  .adj-btn:active{background:var(--border);color:var(--text)}
+/* ── Modal ── */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.55);
+  z-index:100;display:flex;align-items:flex-end;
+  opacity:0;pointer-events:none;transition:opacity 0.2s;
+}
+.overlay.open{opacity:1;pointer-events:all}
+.sheet{
+  background:var(--surface);border-radius:20px 20px 0 0;
+  width:100%;max-height:94dvh;overflow-y:auto;padding:16px 16px 32px;
+  transform:translateY(100%);
+  transition:transform 0.28s cubic-bezier(0.32,0.72,0,1);
+  border-top:1px solid var(--border);
+}
+.overlay.open .sheet{transform:translateY(0)}
+.drag-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 18px}
+.sheet-title{font-size:18px;font-weight:800;letter-spacing:-0.4px;margin-bottom:16px}
 
-  .field{margin-bottom:12px}
-  .field label{display:block;font-size:11px;color:var(--text-muted);margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px}
-  .field input,.field select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:15px;padding:10px 12px;outline:none;font-family:var(--font);-webkit-appearance:none;transition:border-color 0.15s}
-  .field input:focus,.field select:focus{border-color:var(--accent)}
-  .field input::placeholder{color:var(--text-dim)}
+/* Time picker */
+.time-row{display:grid;grid-template-columns:1fr 24px 1fr;gap:8px;align-items:center;margin-bottom:8px}
+.time-block{
+  background:var(--surface2);border:1.5px solid var(--border);
+  border-radius:12px;padding:12px 10px;text-align:center;cursor:pointer;
+  transition:border-color 0.15s;
+}
+.time-block.active{border-color:var(--accent)}
+.tb-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+.tb-val{font-size:26px;font-weight:800;letter-spacing:-1px;line-height:1}
+.time-sep{text-align:center;color:var(--text-dim);font-size:20px;font-weight:300}
+.dur{text-align:center;font-size:12px;color:var(--text-muted);margin-bottom:14px;min-height:16px}
 
-  .modal-actions{display:flex;gap:10px;margin-top:4px}
-  .btn{flex:1;padding:13px;border:none;border-radius:var(--radius);font-size:15px;font-weight:600;cursor:pointer;font-family:var(--font)}
-  .btn:active{filter:brightness(1.1)}
-  .btn-primary{background:var(--accent);color:#fff}
-  .btn-secondary{background:var(--surface2);color:var(--text-muted)}
-  .btn-danger{background:rgba(224,92,106,0.15);color:var(--danger)}
+.adj-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:16px}
+.adj{
+  padding:8px 2px;border:none;background:var(--surface2);
+  border-radius:8px;color:var(--text-muted);font-size:11px;font-weight:600;
+  cursor:pointer;text-align:center;transition:all 0.12s;
+}
+.adj:active{background:var(--accent-dim);color:var(--accent-text)}
 
-  .detail-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
-  .detail-row:last-child{border-bottom:none}
-  .detail-icon{font-size:16px;width:20px;flex-shrink:0}
-  .detail-label{font-size:11px;color:var(--text-muted);margin-bottom:2px}
-  .detail-value{font-size:14px}
+/* Fields */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px}
+.field input,.field select,.field textarea{
+  width:100%;background:var(--surface2);border:1.5px solid var(--border);
+  border-radius:var(--radius);color:var(--text);font-size:15px;
+  padding:11px 12px;outline:none;font-family:var(--font);-webkit-appearance:none;
+  transition:border-color 0.15s;
+}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+.field input::placeholder{color:var(--text-dim)}
+.field-hint{font-size:11px;color:var(--text-dim);margin-top:4px}
 
-  /* Team badge */
-  .team-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;font-size:12px;font-weight:600}
-  .team-badge.team-yadro{background:var(--yadro-bg);color:#7b7eff;border:1px solid rgba(43,46,245,0.3)}
-  .team-badge.team-iks{background:var(--iks-bg);color:#ccc;border:1px solid rgba(255,255,255,0.15)}
-  .team-badge.team-none{background:var(--surface2);color:var(--text-muted);border:1px solid var(--border)}
-  .team-badge svg{width:14px;height:14px}
+/* Buttons */
+.btn-row{display:flex;gap:8px;margin-top:8px}
+.btn{
+  flex:1;padding:14px;border:none;border-radius:var(--radius);
+  font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font);
+  transition:filter 0.15s;
+}
+.btn:active{filter:brightness(1.1)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-ghost{background:var(--surface2);color:var(--text-muted)}
+.btn-danger{background:rgba(255,92,106,0.12);color:var(--danger)}
+.btn-sm{flex:0 0 auto;padding:14px 16px}
 
-  /* Admin */
-  .admin-user-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
-  .admin-user-info{flex:1;min-width:0}
-  .admin-user-name{font-size:14px;font-weight:500;display:flex;align-items:center;gap:6px}
-  .admin-user-id{font-size:11px;color:var(--text-muted);margin-top:2px}
-  .team-select{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:4px 6px;outline:none;-webkit-appearance:none;font-family:var(--font)}
-  .del-btn{width:30px;height:30px;border:none;background:rgba(224,92,106,0.12);border-radius:7px;color:var(--danger);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-  .add-user-form{display:flex;flex-direction:column;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
-  .add-row{display:flex;gap:8px}
-  .add-row input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px;padding:9px 12px;outline:none;font-family:var(--font)}
-  .add-row input:focus{border-color:var(--accent)}
-  .add-row select{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px;padding:9px 10px;outline:none;-webkit-appearance:none;font-family:var(--font)}
-  .add-row button{padding:9px 14px;border:none;background:var(--accent);border-radius:var(--radius);color:#fff;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
+/* Detail */
+.detail-row{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+.detail-row:last-child{border-bottom:none}
+.di{font-size:18px;width:24px;flex-shrink:0;text-align:center}
+.dl{font-size:11px;color:var(--text-muted);margin-bottom:3px}
+.dv{font-size:15px;font-weight:500}
 
-  .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:8px 16px;font-size:13px;opacity:0;transition:all 0.25s;z-index:200;white-space:nowrap;pointer-events:none}
-  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-  .toast.error{border-color:var(--danger);color:var(--danger)}
-  .toast.success{border-color:var(--success);color:var(--success)}
+/* Team badge */
+.tbadge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700}
+.tbadge.yadro{background:var(--yadro-bg);color:var(--yadro);border:1px solid rgba(79,127,255,0.25)}
+.tbadge.iks{background:var(--iks-bg);color:var(--iks);border:1px solid rgba(255,140,66,0.25)}
+.tbadge.none{background:var(--surface2);color:var(--text-muted);border:1px solid var(--border)}
 
-  .loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:50;flex-direction:column;gap:12px}
-  .spinner{width:28px;height:28px;border:2.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  select option{background:#1a1a22}
+/* Admin */
+.user-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)}
+.user-info{flex:1;min-width:0}
+.user-name{font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px}
+.user-id{font-size:11px;color:var(--text-muted);margin-top:1px}
+.team-sel{
+  background:var(--surface2);border:1.5px solid var(--border);
+  border-radius:8px;color:var(--text);font-size:12px;font-weight:600;
+  padding:5px 8px;outline:none;-webkit-appearance:none;font-family:var(--font);
+  cursor:pointer;
+}
+.del-btn{
+  width:32px;height:32px;border:none;
+  background:rgba(255,92,106,0.1);border-radius:8px;
+  color:var(--danger);font-size:15px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.add-form{padding-top:14px;border-top:1px solid var(--border);margin-top:4px;display:flex;flex-direction:column;gap:8px}
+.add-row{display:flex;gap:6px}
+.add-row input{flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px;padding:9px 12px;outline:none;font-family:var(--font)}
+.add-row input:focus{border-color:var(--accent)}
+.add-row select{background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:14px;padding:9px 10px;outline:none;-webkit-appearance:none;font-family:var(--font)}
+.add-row button{padding:9px 14px;border:none;background:var(--accent);border-radius:var(--radius);color:#fff;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap}
+
+/* Settings section */
+.section-title{font-size:13px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin:20px 0 10px}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:90px;left:50%;
+  transform:translateX(-50%) translateY(12px);
+  background:var(--surface);border:1.5px solid var(--border);
+  border-radius:24px;padding:10px 18px;font-size:13px;font-weight:500;
+  opacity:0;transition:all 0.22s;z-index:300;white-space:nowrap;pointer-events:none;
+  box-shadow:var(--shadow);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:var(--success);color:var(--success)}
+.toast.err{border-color:var(--danger);color:var(--danger)}
+.toast.info{border-color:var(--accent);color:var(--accent-text)}
+
+/* Onboarding */
+.onboard{
+  position:fixed;inset:0;background:rgba(0,0,0,0.75);
+  z-index:200;display:flex;align-items:flex-end;
+  opacity:0;pointer-events:none;transition:opacity 0.25s;
+}
+.onboard.show{opacity:1;pointer-events:all}
+.onboard-sheet{
+  background:var(--surface);border-radius:24px 24px 0 0;
+  width:100%;padding:24px 24px 40px;
+}
+.onboard-icon{font-size:48px;text-align:center;margin-bottom:12px}
+.onboard-title{font-size:22px;font-weight:800;text-align:center;margin-bottom:8px;letter-spacing:-0.5px}
+.onboard-text{font-size:15px;color:var(--text-muted);text-align:center;line-height:1.6;margin-bottom:24px}
+.onboard-steps{display:flex;flex-direction:column;gap:12px;margin-bottom:24px}
+.step{display:flex;align-items:flex-start;gap:12px;background:var(--surface2);border-radius:12px;padding:12px}
+.step-icon{font-size:22px;flex-shrink:0}
+.step-text{font-size:14px;line-height:1.5;color:var(--text)}
+.step-text b{color:var(--text)}
+
+/* Loading */
+.loading{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:500}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+select option{background:var(--surface)}
 </style>
 </head>
 <body>
 
-<!-- SVG логотипы (скрытые, используются через use) -->
-<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
-  <symbol id="logo-yadro" viewBox="0 0 120 100">
-    <!-- Y -->
-    <polygon points="0,0 20,0 30,20 40,0 60,0 40,40 40,60 20,60 20,40" fill="currentColor"/>
-    <!-- A -->
-    <polygon points="65,0 95,0 110,60 90,60 80,25 70,60 50,60" fill="currentColor"/>
-    <!-- D -->
-    <path d="M0,68 L25,68 Q50,68 50,88 Q50,108 25,108 L0,108 Z M18,80 L18,96 L24,96 Q33,96 33,88 Q33,80 24,80 Z" fill="currentColor" transform="scale(1,0.85) translate(0,12)"/>
-    <!-- R -->
-    <path d="M55,68 L80,68 Q95,68 95,80 Q95,88 86,91 L98,108 L76,108 L67,93 L73,93 Q77,93 77,88 Q77,84 73,84 L73,108 L55,108 Z" fill="currentColor" transform="scale(1,0.85) translate(0,12)"/>
-    <!-- O -->
-    <circle cx="108" cy="88" r="18" fill="none" stroke="currentColor" stroke-width="9" transform="scale(1,0.85) translate(0,12)"/>
-  </symbol>
-  <symbol id="logo-iks" viewBox="0 0 80 40">
-    <!-- Star/asterisk shape -->
-    <g fill="currentColor">
-      <rect x="16" y="8" width="8" height="24" rx="2" transform="rotate(0,20,20)"/>
-      <rect x="16" y="8" width="8" height="24" rx="2" transform="rotate(45,20,20)"/>
-      <rect x="16" y="8" width="8" height="24" rx="2" transform="rotate(90,20,20)"/>
-      <rect x="16" y="8" width="8" height="24" rx="2" transform="rotate(135,20,20)"/>
-    </g>
-    <text x="38" y="28" font-size="20" font-weight="700" font-family="-apple-system,sans-serif" fill="currentColor">ИКС</text>
-  </symbol>
-</svg>
-
 <div class="loading" id="loading">
   <div class="spinner"></div>
-  <span style="color:var(--text-muted);font-size:13px">Загрузка…</span>
+  <span style="color:var(--text-muted);font-size:13px">Загружаем…</span>
 </div>
 
+<!-- Header -->
 <div class="header">
-  <button class="nav-btn" id="prevBtn">‹</button>
-  <button class="today-btn" id="todayBtn">Сегодня</button>
-  <button class="nav-btn" id="nextBtn">›</button>
+  <button class="icon-btn" id="prevBtn">‹</button>
+  <button class="today-pill" id="todayBtn">Сегодня</button>
+  <button class="icon-btn" id="nextBtn">›</button>
   <div class="header-title" id="headerTitle"></div>
-  <button class="admin-btn" id="adminBtn" style="display:none">⚙️</button>
+  <button class="icon-btn theme-btn" id="themeBtn">🌙</button>
+  <button class="icon-btn" id="adminBtn" style="display:none;font-size:16px">⚙️</button>
 </div>
 
+<!-- Tabs -->
 <div class="view-tabs">
-  <button class="view-tab active" data-view="day">День</button>
-  <button class="view-tab" data-view="week">Неделя</button>
+  <button class="tab active" data-view="day">День</button>
+  <button class="tab" data-view="week">Неделя</button>
 </div>
 
+<!-- Week header -->
 <div class="week-header" id="weekHeader">
-  <div class="week-header-gutter"></div>
+  <div class="week-gutter"></div>
   <div class="week-days" id="weekDays"></div>
 </div>
 
+<!-- Calendar -->
 <div class="cal-wrap">
   <div class="grid-scroll" id="gridScroll">
     <div class="time-grid view-day" id="timeGrid">
@@ -198,116 +326,119 @@
       <div class="grid-cols" id="gridCols"></div>
     </div>
   </div>
+  <!-- FAB -->
+  <button class="fab" id="fabBtn">+</button>
 </div>
 
 <!-- Book modal -->
-<div class="modal-overlay" id="bookModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="bookModalTitle">Забронировать</div>
-    <div class="time-picker">
-      <div class="time-block" id="startBlock" onclick="setActiveField('start')">
-        <div class="time-block-label">Начало</div>
-        <div class="time-block-value" id="startVal">10:00</div>
+<div class="overlay" id="bookModal">
+  <div class="sheet">
+    <div class="drag-handle"></div>
+    <div class="sheet-title" id="bookTitle">Забронировать</div>
+    <div class="time-row">
+      <div class="time-block active" id="bStartBlock" onclick="setAF('start')">
+        <div class="tb-label">Начало</div>
+        <div class="tb-val" id="bStartVal">10:00</div>
       </div>
-      <div class="time-arrow">→</div>
-      <div class="time-block" id="endBlock" onclick="setActiveField('end')">
-        <div class="time-block-label">Конец</div>
-        <div class="time-block-value" id="endVal">11:00</div>
+      <div class="time-sep">→</div>
+      <div class="time-block" id="bEndBlock" onclick="setAF('end')">
+        <div class="tb-label">Конец</div>
+        <div class="tb-val" id="bEndVal">11:00</div>
       </div>
     </div>
-    <div class="duration-label" id="durationLabel"></div>
-    <div class="time-adjust">
-      <button class="adj-btn" onclick="adjustTime(-60)">−1ч</button>
-      <button class="adj-btn" onclick="adjustTime(-30)">−30м</button>
-      <button class="adj-btn" onclick="adjustTime(-15)">−15м</button>
-      <button class="adj-btn" onclick="adjustTime(15)">+15м</button>
-      <button class="adj-btn" onclick="adjustTime(30)">+30м</button>
-      <button class="adj-btn" onclick="adjustTime(60)">+1ч</button>
+    <div class="dur" id="bDur"></div>
+    <div class="adj-grid">
+      <button class="adj" onclick="adj(-60)">−1ч</button>
+      <button class="adj" onclick="adj(-30)">−30м</button>
+      <button class="adj" onclick="adj(-15)">−15м</button>
+      <button class="adj" onclick="adj(15)">+15м</button>
+      <button class="adj" onclick="adj(30)">+30м</button>
+      <button class="adj" onclick="adj(60)">+1ч</button>
     </div>
     <div class="field">
-      <label>Название <span style="color:var(--text-dim);font-weight:400;text-transform:none">(необязательно)</span></label>
-      <input type="text" id="fTitle" placeholder="Встреча, звонок…" maxlength="80">
+      <label>Название <span style="color:var(--text-dim);font-weight:400;text-transform:none;font-size:11px">(необязательно)</span></label>
+      <input type="text" id="bTitle" placeholder="Встреча, звонок, интервью…" maxlength="80">
     </div>
     <div class="field">
       <label>Повтор</label>
-      <select id="fRecurType">
+      <select id="bRecur">
         <option value="none">Без повтора</option>
         <option value="daily">Ежедневно</option>
         <option value="weekly">Еженедельно</option>
         <option value="monthly">Ежемесячно</option>
       </select>
     </div>
-    <div class="field" id="fRecurCountWrap" style="display:none">
+    <div class="field" id="bRecurCountWrap" style="display:none">
       <label>Количество повторений</label>
-      <input type="number" id="fRecurCount" min="2" max="365" value="5">
+      <input type="number" id="bRecurCount" min="2" max="365" value="5">
     </div>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal('bookModal')">Отмена</button>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="close_('bookModal')">Отмена</button>
       <button class="btn btn-primary" onclick="saveBooking()">Забронировать</button>
     </div>
   </div>
 </div>
 
 <!-- Edit modal -->
-<div class="modal-overlay" id="editModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Изменить бронь</div>
-    <div class="time-picker">
-      <div class="time-block" id="eStartBlock" onclick="setActiveEditField('estart')">
-        <div class="time-block-label">Начало</div>
-        <div class="time-block-value" id="eStartVal">10:00</div>
+<div class="overlay" id="editModal">
+  <div class="sheet">
+    <div class="drag-handle"></div>
+    <div class="sheet-title">Изменить бронь</div>
+    <div class="time-row">
+      <div class="time-block active" id="eStartBlock" onclick="setEF('start')">
+        <div class="tb-label">Начало</div>
+        <div class="tb-val" id="eStartVal">10:00</div>
       </div>
-      <div class="time-arrow">→</div>
-      <div class="time-block" id="eEndBlock" onclick="setActiveEditField('eend')">
-        <div class="time-block-label">Конец</div>
-        <div class="time-block-value" id="eEndVal">11:00</div>
+      <div class="time-sep">→</div>
+      <div class="time-block" id="eEndBlock" onclick="setEF('end')">
+        <div class="tb-label">Конец</div>
+        <div class="tb-val" id="eEndVal">11:00</div>
       </div>
     </div>
-    <div class="duration-label" id="eDurationLabel"></div>
-    <div class="time-adjust">
-      <button class="adj-btn" onclick="adjustTime(-60,true)">−1ч</button>
-      <button class="adj-btn" onclick="adjustTime(-30,true)">−30м</button>
-      <button class="adj-btn" onclick="adjustTime(-15,true)">−15м</button>
-      <button class="adj-btn" onclick="adjustTime(15,true)">+15м</button>
-      <button class="adj-btn" onclick="adjustTime(30,true)">+30м</button>
-      <button class="adj-btn" onclick="adjustTime(60,true)">+1ч</button>
+    <div class="dur" id="eDur"></div>
+    <div class="adj-grid">
+      <button class="adj" onclick="adjE(-60)">−1ч</button>
+      <button class="adj" onclick="adjE(-30)">−30м</button>
+      <button class="adj" onclick="adjE(-15)">−15м</button>
+      <button class="adj" onclick="adjE(15)">+15м</button>
+      <button class="adj" onclick="adjE(30)">+30м</button>
+      <button class="adj" onclick="adjE(60)">+1ч</button>
     </div>
     <div class="field">
-      <label>Название <span style="color:var(--text-dim);font-weight:400;text-transform:none">(необязательно)</span></label>
+      <label>Название <span style="color:var(--text-dim);font-weight:400;text-transform:none;font-size:11px">(необязательно)</span></label>
       <input type="text" id="eTitle" placeholder="Встреча, звонок…" maxlength="80">
     </div>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal('editModal')">Отмена</button>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="close_('editModal')">Отмена</button>
       <button class="btn btn-primary" onclick="saveEdit()">Сохранить</button>
     </div>
   </div>
 </div>
 
 <!-- Detail modal -->
-<div class="modal-overlay" id="detailModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="detailTitle"></div>
-    <div id="detailInfo"></div>
-    <div class="modal-actions" id="detailActions"></div>
+<div class="overlay" id="detailModal">
+  <div class="sheet">
+    <div class="drag-handle"></div>
+    <div class="sheet-title" id="dTitle"></div>
+    <div id="dInfo"></div>
+    <div class="btn-row" id="dActions" style="margin-top:16px"></div>
   </div>
 </div>
 
 <!-- Admin modal -->
-<div class="modal-overlay" id="adminModal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">Управление доступом</div>
-    <div id="adminList"><div style="color:var(--text-muted);font-size:13px;padding:10px 0">Загрузка…</div></div>
-    <div class="add-user-form">
+<div class="overlay" id="adminModal">
+  <div class="sheet">
+    <div class="drag-handle"></div>
+    <div class="sheet-title">Управление</div>
+    <div id="adminList"></div>
+    <div class="add-form">
+      <div style="font-size:13px;font-weight:700;color:var(--text-muted);margin-bottom:4px">ДОБАВИТЬ ПОЛЬЗОВАТЕЛЯ</div>
       <div class="add-row">
-        <input type="number" id="newUserId" placeholder="Telegram ID">
-        <input type="text" id="newUserName" placeholder="Имя">
+        <input type="number" id="newId" placeholder="Telegram ID">
+        <input type="text" id="newName" placeholder="Имя">
       </div>
       <div class="add-row">
-        <select id="newUserTeam" style="flex:1">
+        <select id="newTeam" style="flex:1">
           <option value="none">Без команды</option>
           <option value="yadro">YADRO</option>
           <option value="iks">ИКС</option>
@@ -315,21 +446,44 @@
         <button onclick="addUser()">Добавить</button>
       </div>
     </div>
-    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
-      <div class="modal-title" style="font-size:15px;margin-bottom:12px">⚙️ Настройки уведомлений</div>
-      <div class="field">
-        <label>ID чата для уведомлений</label>
-        <input type="text" id="settingChatId" placeholder="-100123456789">
-      </div>
-      <div class="field">
-        <label>Время утреннего расписания</label>
-        <input type="time" id="settingTime" value="10:00">
-      </div>
-      <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="saveSettings()">Сохранить настройки</button>
+    <div class="section-title">УВЕДОМЛЕНИЯ</div>
+    <div class="field">
+      <label>ID чата</label>
+      <input type="text" id="sChatId" placeholder="-100123456789">
+      <div class="field-hint">Напиши /chatid в нужном чате</div>
     </div>
-    <div class="modal-actions" style="margin-top:12px">
-      <button class="btn btn-secondary" onclick="closeModal('adminModal')">Закрыть</button>
+    <div class="field">
+      <label>Время утреннего расписания</label>
+      <input type="time" id="sTime" value="10:00">
     </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="close_('adminModal')">Закрыть</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Onboarding -->
+<div class="onboard" id="onboard">
+  <div class="onboard-sheet">
+    <div class="onboard-icon">📅</div>
+    <div class="onboard-title">Переговорка</div>
+    <div class="onboard-text">Бронируй время быстро и без лишних шагов</div>
+    <div class="onboard-steps">
+      <div class="step">
+        <div class="step-icon">👆</div>
+        <div class="step-text"><b>Тапни на любое время</b> в календаре или нажми кнопку <b>+</b> и выбери удобный слот!</div>
+      </div>
+      <div class="step">
+        <div class="step-icon">✅</div>
+        <div class="step-text"><b>Нажми «Забронировать»</b> — готово. Все увидят твою бронь сразу!</div>
+      </div>
+      <div class="step">
+        <div class="step-icon">👁</div>
+        <div class="step-text"><b>Тапни на чужую бронь</b> чтобы увидеть, кто и когда. Свои брони можно редактировать.</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;font-size:16px" onclick="closeOnboard()">Понятно, начнём!</button>
   </div>
 </div>
 
@@ -338,139 +492,105 @@
 <script>
 const WORKER_URL = 'https://meet.prok.love';
 const ADMIN_IDS = [7075429371];
-const SLOT_H = 56;
+const DAY_START = 10; // first visible hour
+const DAY_END = 20;   // last visible hour
+const SLOT_H = 64;    // px per hour
+const VISIBLE_HOURS = DAY_END - DAY_START;
 
 const tg = window.Telegram?.WebApp;
-let currentView = 'day';
-let cursor = todayDate();
+let view = 'day';
+let cursor = localToday();
 let bookings = [];
-let currentUserId = 0;
-let currentUserName = '';
-let currentUserTeam = 'none';
-let isAdmin = false;
-let initDataRaw = '';
-let activeField = 'end';
-let activeEditField = 'eend';
-let editingId = null;
+let myId = 0, myName = '', myTeam = 'none', isAdmin = false;
+let initData = '';
 let bookDate = null;
-let bStart = {h:10,m:0};
-let bEnd = {h:11,m:0};
-let eStart = {h:10,m:0};
-let eEnd = {h:11,m:0};
+let bS = {h:10,m:0}, bE = {h:11,m:0}, bAF = 'end';
+let eS = {h:10,m:0}, eE = {h:11,m:0}, eAF = 'end', editId = null;
 
-// SVG logos as data strings
-const LOGOS = {
-  yadro: `<svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
-    <path d="M0,0 L14,0 L22,16 L30,0 L44,0 L30,32 L30,44 L14,44 L14,32 Z" fill="currentColor"/>
-    <path d="M50,0 L72,0 L82,44 L68,44 L61,18 L54,44 L40,44 Z" fill="currentColor"/>
-    <path d="M0,50 L18,50 Q36,50 36,64 Q36,78 18,78 L0,78 Z M12,60 L12,68 L17,68 Q24,68 24,64 Q24,60 17,60 Z" fill="currentColor"/>
-    <path d="M40,50 L58,50 Q70,50 70,60 Q70,66 63,68 L74,78 L58,78 L50,68 L54,68 Q58,68 58,64 Q58,60 54,60 L54,78 L40,78 Z" fill="currentColor"/>
-    <circle cx="88" cy="64" r="12" fill="none" stroke="currentColor" stroke-width="7"/>
-  </svg>`,
-  iks: `<svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
-    <g transform="translate(10,20)" fill="currentColor">
-      <rect x="-3" y="-12" width="6" height="24" rx="1.5"/>
-      <rect x="-3" y="-12" width="6" height="24" rx="1.5" transform="rotate(45)"/>
-      <rect x="-3" y="-12" width="6" height="24" rx="1.5" transform="rotate(90)"/>
-      <rect x="-3" y="-12" width="6" height="24" rx="1.5" transform="rotate(135)"/>
-    </g>
-    <text x="26" y="27" font-size="17" font-weight="800" font-family="-apple-system,sans-serif" fill="currentColor">ИКС</text>
-  </svg>`
-};
-
-function teamLogo(team, size=14) {
-  if (team === 'yadro' || team === 'iks') {
-    const color = team === 'yadro' ? '#7b7eff' : '#cccccc';
-    const svg = LOGOS[team].replace('currentColor', color).replace('currentColor', color);
-    return `<svg class="chip-logo" style="width:${size}px;height:${size}px;color:${color}" viewBox="${team==='yadro'?'0 0 100 80':'0 0 60 40'}" xmlns="http://www.w3.org/2000/svg">${team==='yadro'?svgInner('yadro'):svgInner('iks')}</svg>`;
-  }
-  return '';
-}
-
-function svgInner(team) {
-  if (team === 'yadro') return `
-    <path d="M0,0 L14,0 L22,16 L30,0 L44,0 L30,32 L30,44 L14,44 L14,32 Z" fill="currentColor"/>
-    <path d="M50,0 L72,0 L82,44 L68,44 L61,18 L54,44 L40,44 Z" fill="currentColor"/>
-    <path d="M0,50 L18,50 Q36,50 36,64 Q36,78 18,78 L0,78 Z M12,60 L12,68 L17,68 Q24,68 24,64 Q24,60 17,60 Z" fill="currentColor"/>
-    <path d="M40,50 L58,50 Q70,50 70,60 Q70,66 63,68 L74,78 L58,78 L50,68 L54,68 Q58,68 58,64 Q58,60 54,60 L54,78 L40,78 Z" fill="currentColor"/>
-    <circle cx="88" cy="64" r="12" fill="none" stroke="currentColor" stroke-width="7"/>`;
-  return `<g transform="translate(10,20)" fill="currentColor">
-    <rect x="-3" y="-12" width="6" height="24" rx="1.5"/>
-    <rect x="-3" y="-12" width="6" height="24" rx="1.5" transform="rotate(45)"/>
-    <rect x="-3" y="-12" width="6" height="24" rx="1.5" transform="rotate(90)"/>
-    <rect x="-3" y="-12" width="6" height="24" rx="1.5" transform="rotate(135)"/>
-  </g>
-  <text x="26" y="27" font-size="17" font-weight="800" font-family="-apple-system,sans-serif" fill="currentColor">ИКС</text>`;
-}
-
-function teamBadgeHTML(team) {
-  const labels = {yadro:'YADRO', iks:'ИКС', none:'Без команды'};
-  const color = team === 'yadro' ? '#7b7eff' : team === 'iks' ? '#ccc' : 'var(--text-dim)';
-  const logo = team !== 'none' ? `<svg style="width:12px;height:12px;color:${color}" viewBox="${team==='yadro'?'0 0 100 80':'0 0 60 40'}" xmlns="http://www.w3.org/2000/svg">${svgInner(team)}</svg>` : '';
-  return `<span class="team-badge team-${team}">${logo}${labels[team]||'—'}</span>`;
-}
-
-(async function init() {
+// ── Init ──────────────────────────────────────────────────────────────────────
+(async () => {
   tg?.expand();
-  initDataRaw = tg?.initData || '';
-  const user = tg?.initDataUnsafe?.user;
-  currentUserId = user?.id || 0;
-  currentUserName = user?.first_name || 'Гость';
-  if (user?.username) currentUserName += ` (@${user.username})`;
+  initData = tg?.initData || '';
+  const u = tg?.initDataUnsafe?.user;
+  myId = u?.id || 0;
+  myName = u?.first_name || 'Гость';
+  if (u?.username) myName += ` (@${u.username})`;
 
-  if (ADMIN_IDS.includes(currentUserId)) {
-    document.getElementById('adminBtn').style.display = 'flex';
-  }
+  // Theme from storage
+  const savedTheme = localStorage.getItem('meetroom_theme') || 'dark';
+  setTheme(savedTheme);
+
+  if (ADMIN_IDS.includes(myId)) document.getElementById('adminBtn').style.display = 'flex';
 
   await sleep(200);
   document.getElementById('loading').style.display = 'none';
 
-  // Load user's team
+  // Onboarding
+  if (!localStorage.getItem('meetroom_onboarded')) {
+    document.getElementById('onboard').classList.add('show');
+  }
+
+  // Load my team
   try {
-    const me = await apiFetch('/me');
-    currentUserTeam = me.team || 'none';
+    const me = await api('/me');
+    myTeam = me.team || 'none';
     isAdmin = me.isAdmin || false;
+    if (isAdmin) document.getElementById('adminBtn').style.display = 'flex';
   } catch(e) {}
 
   render();
-  await loadBookings();
+  await load();
   scrollToNow();
   setupListeners();
 })();
 
-// ── Render ────────────────────────────────────────────────────────────────────
-function render() {
-  renderHeader();
-  renderGrid();
+function closeOnboard() {
+  localStorage.setItem('meetroom_onboarded', '1');
+  document.getElementById('onboard').classList.remove('show');
 }
+
+// ── Theme ─────────────────────────────────────────────────────────────────────
+function setTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('themeBtn').textContent = t === 'dark' ? '☀️' : '🌙';
+  localStorage.setItem('meetroom_theme', t);
+}
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  setTheme(cur === 'dark' ? 'light' : 'dark');
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() { renderHeader(); renderGrid(); }
 
 function renderHeader() {
   const el = document.getElementById('headerTitle');
-  if (currentView === 'day') {
-    el.textContent = formatDate(cursor, {weekday:'long',day:'numeric',month:'long'});
+  if (view === 'day') {
+    el.textContent = fmtDate(cursor, {weekday:'short', day:'numeric', month:'short'});
   } else {
-    const end = addDays(cursor, 6);
-    el.textContent = `${cursor.getDate()} — ${end.getDate()} ${end.toLocaleDateString('ru',{month:'long'})}`;
+    const e = addDays(cursor, 6);
+    el.textContent = `${cursor.getDate()} — ${e.getDate()} ${e.toLocaleDateString('ru',{month:'short'})}`;
   }
-  document.getElementById('weekHeader').classList.toggle('visible', currentView === 'week');
-  if (currentView === 'week') renderWeekDayLabels();
+  const wh = document.getElementById('weekHeader');
+  wh.classList.toggle('vis', view === 'week');
+  if (view === 'week') renderWeekDays();
 }
 
-function renderWeekDayLabels() {
+function renderWeekDays() {
   const c = document.getElementById('weekDays');
   c.innerHTML = '';
-  const today = todayDate();
-  for (let i=0;i<7;i++) {
-    const d = addDays(cursor,i);
+  const today = localToday();
+  for (let i=0; i<7; i++) {
+    const d = addDays(cursor, i);
     const div = document.createElement('div');
-    div.className = 'week-day-label'+(d.toDateString()===today.toDateString()?' today':'');
+    div.className = 'wday' + (toDS(d) === toDS(today) ? ' today' : '');
     div.innerHTML = `<span class="wd">${d.toLocaleDateString('ru',{weekday:'short'})}</span><span class="dd">${d.getDate()}</span>`;
     c.appendChild(div);
   }
 }
 
 function renderGrid() {
-  document.getElementById('timeGrid').className = `time-grid view-${currentView}`;
+  document.getElementById('timeGrid').className = `time-grid view-${view}`;
   renderGutter();
   renderCols();
   renderNowLine();
@@ -479,74 +599,92 @@ function renderGrid() {
 function renderGutter() {
   const el = document.getElementById('timeGutter');
   el.innerHTML = '';
-  for (let h=0;h<=23;h++) {
-    const l = document.createElement('div');
-    l.className = 'time-label';
-    l.style.top = `${h*SLOT_H}px`;
-    l.textContent = h===0?'':pad(h)+':00';
-    el.appendChild(l);
+  const totalH = VISIBLE_HOURS;
+  for (let h=0; h<=totalH; h++) {
+    const hour = DAY_START + h;
+    const label = document.createElement('div');
+    label.className = 'time-label';
+    label.style.top = `${h * SLOT_H}px`;
+    label.textContent = hour < 24 ? pad(hour)+':00' : '';
+    el.appendChild(label);
   }
 }
 
 function renderCols() {
   const container = document.getElementById('gridCols');
   container.innerHTML = '';
-  const numCols = currentView === 'week' ? 7 : 1;
-  for (let c=0;c<numCols;c++) {
-    const date = addDays(cursor,c);
+  const numCols = view === 'week' ? 7 : 1;
+  const totalH = VISIBLE_HOURS;
+
+  for (let c=0; c<numCols; c++) {
+    const d = addDays(cursor, c);
     const col = document.createElement('div');
     col.className = 'grid-col';
-    col.style.height = `${24*SLOT_H}px`;
-    for (let h=0;h<24;h++) {
+    col.style.height = `${totalH * SLOT_H}px`;
+
+    for (let h=0; h<totalH; h++) {
       const line = document.createElement('div');
-      line.className = 'hour-line'; line.style.top = `${h*SLOT_H}px`;
+      line.className = 'hour-line';
+      line.style.top = `${h * SLOT_H}px`;
       col.appendChild(line);
       const half = document.createElement('div');
-      half.className = 'hour-line half'; half.style.top = `${h*SLOT_H+SLOT_H/2}px`;
+      half.className = 'hour-line half';
+      half.style.top = `${h * SLOT_H + SLOT_H/2}px`;
       col.appendChild(half);
     }
+
     const tap = document.createElement('div');
     tap.className = 'tap-zone';
-    tap.addEventListener('click', e => handleColTap(e, col, date));
+    tap.addEventListener('click', e => onColTap(e, col, d));
     col.appendChild(tap);
-    getBookingsForDate(toDateStr(date)).forEach(b => {
-      const chip = createChip(b, numCols>1);
+
+    getForDate(toDS(d)).forEach(b => {
+      const chip = makeChip(b, numCols > 1);
       if (chip) col.appendChild(chip);
     });
+
     container.appendChild(col);
   }
 }
 
-function createChip(b, compact) {
-  const sm = timeToMins(b.start.slice(11,16));
-  const em = timeToMins(b.end.slice(11,16));
-  if (em <= sm) return null;
+function makeChip(b, compact) {
+  const sm = t2m(b.start.slice(11,16));
+  const em = t2m(b.end.slice(11,16));
+  // Only show if overlaps with visible range
+  const visStart = DAY_START * 60;
+  const visEnd = DAY_END * 60;
+  if (em <= visStart || sm >= visEnd) return null;
+
+  const clampedStart = Math.max(sm, visStart);
+  const clampedEnd = Math.min(em, visEnd);
+  const top = ((clampedStart - visStart) / 60) * SLOT_H;
+  const height = Math.max(((clampedEnd - clampedStart) / 60) * SLOT_H - 2, 20);
+
   const team = b.team || 'none';
   const chip = document.createElement('div');
-  chip.className = `booking-chip team-${team}`;
-  const heightPx = Math.max(((em-sm)/60)*SLOT_H - 2, 18);
-  chip.style.top = `${(sm/60)*SLOT_H}px`;
-  chip.style.height = `${heightPx}px`;
+  chip.className = `chip ${team}`;
+  chip.style.top = top + 'px';
+  chip.style.height = height + 'px';
 
   const shortName = b.userName.split(' (@')[0];
   const timeStr = `${b.start.slice(11,16)}–${b.end.slice(11,16)}`;
   const hasTitle = b.title && b.title !== b.userName && b.title !== shortName;
-  const teamTag = team !== 'none'
+  const tag = team !== 'none'
     ? `<span class="chip-tag">${team === 'yadro' ? 'YADRO' : 'ИКС'}</span>`
     : '';
 
   if (compact) {
-    chip.innerHTML = `<div class="chip-row"><span class="chip-name">${esc(shortName)}</span>${teamTag}</div>`;
-  } else if (heightPx < 38) {
+    chip.innerHTML = `<div class="chip-row"><span class="chip-name">${esc(shortName)}</span>${tag}</div>`;
+  } else if (height < 40) {
     const parts = [esc(shortName)];
     if (hasTitle) parts.push(esc(b.title));
     parts.push(timeStr);
-    chip.innerHTML = `<div class="chip-row"><span class="chip-name">${parts.join(' · ')}</span>${teamTag}</div>`;
+    chip.innerHTML = `<div class="chip-row"><span class="chip-name">${parts.join(' · ')}</span>${tag}</div>`;
   } else {
     chip.innerHTML = `
-      <div class="chip-row"><span class="chip-name">${esc(shortName)}</span>${teamTag}</div>
-      ${hasTitle ? `<div class="chip-title">${esc(b.title)}</div>` : ''}
-      <div class="chip-time">${timeStr}</div>`;
+      <div class="chip-row"><span class="chip-name">${esc(shortName)}</span>${tag}</div>
+      ${hasTitle ? `<div class="chip-sub">${esc(b.title)}</div>` : ''}
+      <div class="chip-sub">${timeStr}</div>`;
   }
 
   chip.addEventListener('click', e => { e.stopPropagation(); openDetail(b); });
@@ -554,241 +692,228 @@ function createChip(b, compact) {
 }
 
 function renderNowLine() {
-  document.querySelectorAll('.now-line').forEach(e=>e.remove());
+  document.querySelectorAll('.now-line').forEach(e => e.remove());
   const now = new Date();
-  const todayStr = toDateStr(now);
-  const top = ((now.getHours()*60+now.getMinutes())/60)*SLOT_H;
-  if (currentView==='day') {
-    if (toDateStr(cursor)!==todayStr) return;
-    const col = document.querySelector('.grid-col');
-    if (!col) return;
+  const todayStr = toDS(localToday());
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  if (nowMins < DAY_START * 60 || nowMins > DAY_END * 60) return;
+  const top = ((nowMins - DAY_START * 60) / 60) * SLOT_H;
+
+  const addLine = (col) => {
     const line = document.createElement('div');
-    line.className='now-line'; line.style.top=top+'px';
+    line.className = 'now-line';
+    line.style.top = top + 'px';
     col.appendChild(line);
+  };
+
+  if (view === 'day') {
+    if (toDS(cursor) !== todayStr) return;
+    const col = document.querySelector('.grid-col');
+    if (col) addLine(col);
   } else {
-    for (let i=0;i<7;i++) {
-      if (toDateStr(addDays(cursor,i))===todayStr) {
+    for (let i=0; i<7; i++) {
+      if (toDS(addDays(cursor, i)) === todayStr) {
         const col = document.querySelectorAll('.grid-col')[i];
-        if (!col) break;
-        const line = document.createElement('div');
-        line.className='now-line'; line.style.top=top+'px';
-        col.appendChild(line); break;
+        if (col) { addLine(col); break; }
       }
     }
   }
 }
 
-// ── Time picker ───────────────────────────────────────────────────────────────
-function setActiveField(f) {
-  activeField = f;
-  document.getElementById('startBlock').style.borderColor = f==='start'?'var(--accent)':'';
-  document.getElementById('endBlock').style.borderColor = f==='end'?'var(--accent)':'';
-}
-function setActiveEditField(f) {
-  activeEditField = f;
-  document.getElementById('eStartBlock').style.borderColor = f==='estart'?'var(--accent)':'';
-  document.getElementById('eEndBlock').style.borderColor = f==='eend'?'var(--accent)':'';
-}
-
-function adjustTime(delta, isEdit=false) {
-  if (!isEdit) {
-    if (activeField==='start') {
-      const t = bStart.h*60+bStart.m+delta;
-      if (t<0||t>=24*60) return;
-      bStart = minsToHM(t);
-      if (bStart.h*60+bStart.m >= bEnd.h*60+bEnd.m)
-        bEnd = minsToHM(Math.min(bStart.h*60+bStart.m+60, 23*60+45));
-    } else {
-      const t = bEnd.h*60+bEnd.m+delta;
-      if (t<=bStart.h*60+bStart.m||t>24*60) return;
-      bEnd = minsToHM(Math.min(t,23*60+59));
-    }
-    updateBookUI();
-  } else {
-    if (activeEditField==='estart') {
-      const t = eStart.h*60+eStart.m+delta;
-      if (t<0||t>=24*60) return;
-      eStart = minsToHM(t);
-      if (eStart.h*60+eStart.m >= eEnd.h*60+eEnd.m)
-        eEnd = minsToHM(Math.min(eStart.h*60+eStart.m+60, 23*60+45));
-    } else {
-      const t = eEnd.h*60+eEnd.m+delta;
-      if (t<=eStart.h*60+eStart.m||t>24*60) return;
-      eEnd = minsToHM(Math.min(t,23*60+59));
-    }
-    updateEditUI();
-  }
-}
-
-function updateBookUI() {
-  document.getElementById('startVal').textContent = `${pad(bStart.h)}:${pad(bStart.m)}`;
-  document.getElementById('endVal').textContent = `${pad(bEnd.h)}:${pad(bEnd.m)}`;
-  document.getElementById('durationLabel').textContent = durStr((bEnd.h*60+bEnd.m)-(bStart.h*60+bStart.m));
-}
-function updateEditUI() {
-  document.getElementById('eStartVal').textContent = `${pad(eStart.h)}:${pad(eStart.m)}`;
-  document.getElementById('eEndVal').textContent = `${pad(eEnd.h)}:${pad(eEnd.m)}`;
-  document.getElementById('eDurationLabel').textContent = durStr((eEnd.h*60+eEnd.m)-(eStart.h*60+eStart.m));
-}
-function durStr(mins) {
-  if (mins<=0) return '';
-  const h=Math.floor(mins/60),m=mins%60;
-  return h>0?(m>0?`${h} ч ${m} мин`:`${h} ч`):`${m} мин`;
-}
-
-// ── Tap ───────────────────────────────────────────────────────────────────────
-function handleColTap(e, col, date) {
+// ── Tap & FAB ─────────────────────────────────────────────────────────────────
+function onColTap(e, col, date) {
   const rect = col.getBoundingClientRect();
-  const totalMins = Math.round(((e.clientY-rect.top)/SLOT_H*60)/15)*15;
-  bookDate = date;
-  bStart = minsToHM(totalMins);
-  bEnd = minsToHM(Math.min(totalMins+60, 23*60+45));
-  activeField = 'end';
-  document.getElementById('bookModalTitle').textContent = formatDate(date,{weekday:'long',day:'numeric',month:'long'});
-  document.getElementById('fTitle').value = '';
-  document.getElementById('fRecurType').value = 'none';
-  document.getElementById('fRecurCountWrap').style.display = 'none';
-  setActiveField('end');
-  updateBookUI();
-  openModal('bookModal');
+  const y = e.clientY - rect.top;
+  const totalMins = Math.round((y / SLOT_H * 60 + DAY_START * 60) / 15) * 15;
+  openBookModal(date, totalMins);
 }
 
-// ── Save ──────────────────────────────────────────────────────────────────────
+function openBookModal(date, startMins) {
+  bookDate = date;
+  bS = minsToHM(Math.max(startMins, DAY_START * 60));
+  bE = minsToHM(Math.min(bS.h * 60 + bS.m + 60, DAY_END * 60));
+  bAF = 'end';
+  document.getElementById('bookTitle').textContent = fmtDate(date, {weekday:'long', day:'numeric', month:'long'});
+  document.getElementById('bTitle').value = '';
+  document.getElementById('bRecur').value = 'none';
+  document.getElementById('bRecurCountWrap').style.display = 'none';
+  setAF('end');
+  updBookUI();
+  open_('bookModal');
+}
+
+// ── Time pickers ──────────────────────────────────────────────────────────────
+function setAF(f) {
+  bAF = f;
+  document.getElementById('bStartBlock').classList.toggle('active', f === 'start');
+  document.getElementById('bEndBlock').classList.toggle('active', f === 'end');
+}
+function setEF(f) {
+  eAF = f;
+  document.getElementById('eStartBlock').classList.toggle('active', f === 'start');
+  document.getElementById('eEndBlock').classList.toggle('active', f === 'end');
+}
+
+function adj(d) {
+  if (bAF === 'start') {
+    const t = bS.h*60+bS.m+d;
+    if (t < 0 || t >= 24*60) return;
+    bS = minsToHM(t);
+    if (bS.h*60+bS.m >= bE.h*60+bE.m) bE = minsToHM(Math.min(bS.h*60+bS.m+60, DAY_END*60));
+  } else {
+    const t = bE.h*60+bE.m+d;
+    if (t <= bS.h*60+bS.m || t > 24*60) return;
+    bE = minsToHM(Math.min(t, 23*60+59));
+  }
+  updBookUI();
+}
+function adjE(d) {
+  if (eAF === 'start') {
+    const t = eS.h*60+eS.m+d;
+    if (t < 0 || t >= 24*60) return;
+    eS = minsToHM(t);
+    if (eS.h*60+eS.m >= eE.h*60+eE.m) eE = minsToHM(Math.min(eS.h*60+eS.m+60, DAY_END*60));
+  } else {
+    const t = eE.h*60+eE.m+d;
+    if (t <= eS.h*60+eS.m || t > 24*60) return;
+    eE = minsToHM(Math.min(t, 23*60+59));
+  }
+  updEditUI();
+}
+
+function updBookUI() {
+  document.getElementById('bStartVal').textContent = `${pad(bS.h)}:${pad(bS.m)}`;
+  document.getElementById('bEndVal').textContent = `${pad(bE.h)}:${pad(bE.m)}`;
+  document.getElementById('bDur').textContent = durStr((bE.h*60+bE.m)-(bS.h*60+bS.m));
+}
+function updEditUI() {
+  document.getElementById('eStartVal').textContent = `${pad(eS.h)}:${pad(eS.m)}`;
+  document.getElementById('eEndVal').textContent = `${pad(eE.h)}:${pad(eE.m)}`;
+  document.getElementById('eDur').textContent = durStr((eE.h*60+eE.m)-(eS.h*60+eS.m));
+}
+
+// ── Save booking ──────────────────────────────────────────────────────────────
 async function saveBooking() {
-  const dateStr = toDateStr(bookDate);
+  const ds = toDS(bookDate);
   const body = {
-    title: document.getElementById('fTitle').value.trim(),
-    start: `${dateStr}T${pad(bStart.h)}:${pad(bStart.m)}:00`,
-    end: `${dateStr}T${pad(bEnd.h)}:${pad(bEnd.m)}:00`,
+    title: document.getElementById('bTitle').value.trim(),
+    start: `${ds}T${pad(bS.h)}:${pad(bS.m)}:00`,
+    end: `${ds}T${pad(bE.h)}:${pad(bE.m)}:00`,
   };
-  const recurType = document.getElementById('fRecurType').value;
-  if (recurType !== 'none') body.recurrence = {type:recurType, count:parseInt(document.getElementById('fRecurCount').value)||1};
+  const recur = document.getElementById('bRecur').value;
+  if (recur !== 'none') body.recurrence = {type: recur, count: parseInt(document.getElementById('bRecurCount').value)||1};
+
   try {
-    const result = await apiFetch('/bookings','POST',body);
+    const result = await api('/bookings', 'POST', body);
     if (result.conflict) {
-      closeModal('bookModal');
-      toast('⏳ Время занято — запрос отправлен владельцу', '');
+      close_('bookModal');
+      toast('⏳ Время занято — запрос отправлен', 'info');
     } else {
-      bookings = [...bookings,...result];
-      closeModal('bookModal');
+      bookings = [...bookings, ...result];
+      close_('bookModal');
       renderCols();
-      toast(result.length>1?`Создано ${result.length} броней`:'Забронировано ✓','success');
+      toast(result.length > 1 ? `Создано ${result.length} броней ✓` : 'Забронировано ✓', 'ok');
     }
-  } catch(e) { toast(e.message||'Ошибка','error'); }
+  } catch(e) { toast(e.message || 'Ошибка', 'err'); }
 }
 
 // ── Detail ────────────────────────────────────────────────────────────────────
 function openDetail(b) {
   const shortName = b.userName.split(' (@')[0];
   const hasTitle = b.title && b.title !== b.userName && b.title !== shortName;
-  document.getElementById('detailTitle').textContent = hasTitle ? b.title : shortName;
+  document.getElementById('dTitle').textContent = hasTitle ? b.title : shortName;
 
-  const startDt = new Date(b.start);
-  const dateStr = startDt.toLocaleDateString('ru',{weekday:'long',day:'numeric',month:'long'});
+  const sd = new Date(b.start), ed = new Date(b.end);
+  const dateStr = sd.toLocaleDateString('ru', {weekday:'long', day:'numeric', month:'long'});
   const timeStr = `${b.start.slice(11,16)} — ${b.end.slice(11,16)}`;
-  const dur = (new Date(b.end)-new Date(b.start))/60000;
+  const dur = (ed - sd) / 60000;
+  const team = b.team || 'none';
+  const teamLabels = {yadro:'YADRO', iks:'ИКС', none:'Без команды'};
 
-  document.getElementById('detailInfo').innerHTML = `
-    <div class="detail-row"><div class="detail-icon">📅</div><div><div class="detail-label">Дата</div><div class="detail-value">${dateStr}</div></div></div>
-    <div class="detail-row"><div class="detail-icon">🕐</div><div><div class="detail-label">Время</div><div class="detail-value">${timeStr} · ${durStr(dur)}</div></div></div>
-    <div class="detail-row"><div class="detail-icon">👤</div><div><div class="detail-label">Кто</div><div class="detail-value" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${esc(b.userName)} ${teamBadgeHTML(b.team||'none')}</div></div></div>
+  document.getElementById('dInfo').innerHTML = `
+    <div class="detail-row"><div class="di">📅</div><div><div class="dl">Дата</div><div class="dv">${dateStr}</div></div></div>
+    <div class="detail-row"><div class="di">🕐</div><div><div class="dl">Время</div><div class="dv">${timeStr} · ${durStr(dur)}</div></div></div>
+    <div class="detail-row"><div class="di">👤</div><div><div class="dl">Кто</div><div class="dv" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${esc(b.userName)}<span class="tbadge ${team}">${teamLabels[team]||'—'}</span></div></div></div>
   `;
 
-  const actions = document.getElementById('detailActions');
-  if (b.userId === currentUserId || isAdmin) {
-    actions.innerHTML = '';
-    const cancelBtn = document.createElement('button');
-    cancelBtn.className='btn btn-secondary'; cancelBtn.textContent='Закрыть';
-    cancelBtn.onclick = ()=>closeModal('detailModal');
-    const editBtn = document.createElement('button');
-    editBtn.className='btn btn-primary'; editBtn.textContent='Изменить';
-    editBtn.onclick = ()=>{ closeModal('detailModal'); openEditModal(b); };
-    const delBtn = document.createElement('button');
-    delBtn.className='btn btn-danger'; delBtn.style.flex='0 0 auto'; delBtn.textContent='🗑';
-    delBtn.onclick = ()=>confirmDelete(b);
-    actions.appendChild(cancelBtn); actions.appendChild(editBtn); actions.appendChild(delBtn);
+  const acts = document.getElementById('dActions');
+  acts.innerHTML = '';
+  if (b.userId === myId || isAdmin) {
+    const close = document.createElement('button');
+    close.className = 'btn btn-ghost'; close.textContent = 'Закрыть';
+    close.onclick = () => close_('detailModal');
+    const edit = document.createElement('button');
+    edit.className = 'btn btn-primary'; edit.textContent = 'Изменить';
+    edit.onclick = () => { close_('detailModal'); openEditModal(b); };
+    const del = document.createElement('button');
+    del.className = 'btn btn-danger btn-sm'; del.textContent = '🗑';
+    del.onclick = () => confirmDel(b);
+    acts.appendChild(close); acts.appendChild(edit); acts.appendChild(del);
   } else {
-    actions.innerHTML = `<button class="btn btn-secondary" style="flex:1" onclick="closeModal('detailModal')">Закрыть</button>`;
+    const close = document.createElement('button');
+    close.className = 'btn btn-ghost'; close.style.flex = '1'; close.textContent = 'Закрыть';
+    close.onclick = () => close_('detailModal');
+    acts.appendChild(close);
   }
-  openModal('detailModal');
+  open_('detailModal');
 }
 
 function openEditModal(b) {
-  editingId = b.id;
-  eStart = {h:parseInt(b.start.slice(11,13)),m:parseInt(b.start.slice(14,16))};
-  eEnd = {h:parseInt(b.end.slice(11,13)),m:parseInt(b.end.slice(14,16))};
+  editId = b.id;
+  eS = {h: +b.start.slice(11,13), m: +b.start.slice(14,16)};
+  eE = {h: +b.end.slice(11,13), m: +b.end.slice(14,16)};
   document.getElementById('eTitle').value = b.title || '';
-  activeEditField = 'eend';
-  setActiveEditField('eend');
-  updateEditUI();
-  openModal('editModal');
+  eAF = 'end';
+  setEF('end');
+  updEditUI();
+  open_('editModal');
 }
 
 async function saveEdit() {
-  const b = bookings.find(x=>x.id===editingId);
+  const b = bookings.find(x => x.id === editId);
   if (!b) return;
-  const dateStr = b.start.slice(0,10);
+  const ds = b.start.slice(0,10);
   try {
-    const updated = await apiFetch(`/bookings/${editingId}`,'PUT',{
+    const updated = await api(`/bookings/${editId}`, 'PUT', {
       title: document.getElementById('eTitle').value.trim() || null,
-      start:`${dateStr}T${pad(eStart.h)}:${pad(eStart.m)}:00`,
-      end:`${dateStr}T${pad(eEnd.h)}:${pad(eEnd.m)}:00`
+      start: `${ds}T${pad(eS.h)}:${pad(eS.m)}:00`,
+      end: `${ds}T${pad(eE.h)}:${pad(eE.m)}:00`,
     });
-    bookings = bookings.map(x=>x.id===editingId?updated:x);
-    closeModal('editModal'); renderCols();
-    toast('Обновлено','success');
-  } catch(e) { toast(e.message||'Ошибка','error'); }
+    bookings = bookings.map(x => x.id === editId ? updated : x);
+    close_('editModal'); renderCols();
+    toast('Обновлено ✓', 'ok');
+  } catch(e) { toast(e.message || 'Ошибка', 'err'); }
 }
 
-async function confirmDelete(b) {
+async function confirmDel(b) {
   if (!confirm(`Удалить бронь ${b.start.slice(11,16)}–${b.end.slice(11,16)}?`)) return;
   try {
-    await apiFetch(`/bookings/${b.id}`,'DELETE');
-    bookings = bookings.filter(x=>x.id!==b.id);
-    closeModal('detailModal'); renderCols();
-    toast('Бронь удалена','success');
-  } catch(e) { toast(e.message||'Ошибка','error'); }
+    await api(`/bookings/${b.id}`, 'DELETE');
+    bookings = bookings.filter(x => x.id !== b.id);
+    close_('detailModal'); renderCols();
+    toast('Удалено', 'ok');
+  } catch(e) { toast(e.message || 'Ошибка', 'err'); }
 }
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
 async function openAdmin() {
-  openModal('adminModal');
-  await loadAdminUsers();
+  open_('adminModal');
+  await loadUsers();
   await loadSettings();
 }
 
-async function loadSettings() {
-  try {
-    const s = await apiFetch('/admin/settings');
-    if (s.notify_chat_id) document.getElementById('settingChatId').value = s.notify_chat_id;
-    if (s.notify_time) document.getElementById('settingTime').value = s.notify_time;
-  } catch(e) {}
-}
-
-async function saveSettings() {
-  const chat_id = document.getElementById('settingChatId').value.trim();
-  const notify_time = document.getElementById('settingTime').value;
-  try {
-    await apiFetch('/admin/settings', 'POST', {
-      notify_chat_id: chat_id || null,
-      notify_time: notify_time || null
-    });
-    toast('Настройки сохранены ✓', 'success');
-  } catch(e) { toast(e.message||'Ошибка', 'error'); }
-}
-
-async function loadAdminUsers() {
+async function loadUsers() {
   const list = document.getElementById('adminList');
   try {
-    const users = await apiFetch('/admin/users');
-    if (!users.length) { list.innerHTML='<div style="color:var(--text-muted);font-size:13px;padding:10px 0">Список пуст</div>'; return; }
+    const users = await api('/admin/users');
+    if (!users.length) { list.innerHTML = '<div style="color:var(--text-muted);padding:12px 0;font-size:13px">Нет пользователей</div>'; return; }
     list.innerHTML = users.map(u => `
-      <div class="admin-user-row" id="urow-${u.id}">
-        <div class="admin-user-info">
-          <div class="admin-user-name" onclick="editUserName(${u.id},'${esc(u.name||'')}')" style="cursor:pointer" title="Нажми чтобы изменить имя">${esc(u.name||'—')} ✏️</div>
-          <div class="admin-user-id">ID: ${u.id}</div>
+      <div class="user-row">
+        <div class="user-info">
+          <div class="user-name" onclick="renameUser(${u.id},'${esc(u.name||'')}')">${esc(u.name||'—')} <span style="color:var(--text-dim);font-size:12px">✏️</span></div>
+          <div class="user-id">ID: ${u.id}</div>
         </div>
-        <select class="team-select" onchange="updateTeam(${u.id},this.value)">
+        <select class="team-sel" onchange="setTeam(${u.id},this.value)">
           <option value="none"${u.team==='none'?' selected':''}>—</option>
           <option value="yadro"${u.team==='yadro'?' selected':''}>YADRO</option>
           <option value="iks"${u.team==='iks'?' selected':''}>ИКС</option>
@@ -796,122 +921,166 @@ async function loadAdminUsers() {
         <button class="del-btn" onclick="removeUser(${u.id})">✕</button>
       </div>
     `).join('');
-  } catch(e) { list.innerHTML='<div style="color:var(--danger);font-size:13px">Ошибка</div>'; }
+  } catch(e) { list.innerHTML = '<div style="color:var(--danger);font-size:13px">Ошибка загрузки</div>'; }
 }
 
-async function updateTeam(tgId, team) {
+async function renameUser(id, cur) {
+  const name = prompt('Имя:', cur);
+  if (name === null) return;
   try {
-    await apiFetch(`/admin/users/${tgId}`,'PATCH',{team});
-    if (tgId === currentUserId) currentUserTeam = team;
-    toast('Команда обновлена','success');
-  } catch(e) { toast(e.message||'Ошибка','error'); }
+    await api(`/admin/users/${id}`, 'PATCH', {name: name.trim()});
+    await loadUsers();
+    toast('Имя обновлено', 'ok');
+  } catch(e) { toast(e.message||'Ошибка', 'err'); }
+}
+
+async function setTeam(id, team) {
+  try {
+    await api(`/admin/users/${id}`, 'PATCH', {team});
+    if (id === myId) myTeam = team;
+    toast('Команда обновлена', 'ok');
+  } catch(e) { toast(e.message||'Ошибка', 'err'); }
 }
 
 async function addUser() {
-  const id = parseInt(document.getElementById('newUserId').value);
-  const name = document.getElementById('newUserName').value.trim();
-  const team = document.getElementById('newUserTeam').value;
-  if (!id) { toast('Введите Telegram ID','error'); return; }
+  const id = parseInt(document.getElementById('newId').value);
+  const name = document.getElementById('newName').value.trim();
+  const team = document.getElementById('newTeam').value;
+  if (!id) { toast('Введите Telegram ID', 'err'); return; }
   try {
-    await apiFetch('/admin/users','POST',{id,name,team});
-    document.getElementById('newUserId').value='';
-    document.getElementById('newUserName').value='';
-    document.getElementById('newUserTeam').value='none';
-    await loadAdminUsers();
-    toast('Пользователь добавлен','success');
-  } catch(e) { toast(e.message||'Ошибка','error'); }
+    await api('/admin/users', 'POST', {id, name, team});
+    document.getElementById('newId').value = '';
+    document.getElementById('newName').value = '';
+    document.getElementById('newTeam').value = 'none';
+    await loadUsers();
+    toast('Пользователь добавлен ✓', 'ok');
+  } catch(e) { toast(e.message||'Ошибка', 'err'); }
 }
 
-async function editUserName(tgId, currentName) {
-  const name = prompt('Имя пользователя:', currentName);
-  if (name === null) return;
-  try {
-    await apiFetch(`/admin/users/${tgId}`, 'PATCH', {name: name.trim()});
-    await loadAdminUsers();
-    toast('Имя обновлено', 'success');
-  } catch(e) { toast(e.message||'Ошибка', 'error'); }
-}
-
-async function removeUser(tgId) {
+async function removeUser(id) {
   if (!confirm('Удалить пользователя?')) return;
   try {
-    await apiFetch(`/admin/users/${tgId}`,'DELETE');
-    await loadAdminUsers();
-    toast('Удалён','success');
-  } catch(e) { toast(e.message||'Ошибка','error'); }
+    await api(`/admin/users/${id}`, 'DELETE');
+    await loadUsers();
+    toast('Удалён', 'ok');
+  } catch(e) { toast(e.message||'Ошибка', 'err'); }
+}
+
+async function loadSettings() {
+  try {
+    const s = await api('/admin/settings');
+    if (s.notify_chat_id) document.getElementById('sChatId').value = s.notify_chat_id;
+    if (s.notify_time) document.getElementById('sTime').value = s.notify_time;
+  } catch(e) {}
+}
+
+async function saveSettings() {
+  const chat_id = document.getElementById('sChatId').value.trim();
+  const notify_time = document.getElementById('sTime').value;
+  try {
+    await api('/admin/settings', 'POST', {notify_chat_id: chat_id || null, notify_time: notify_time || null});
+    toast('Сохранено ✓', 'ok');
+  } catch(e) { toast(e.message||'Ошибка', 'err'); }
 }
 
 // ── Data ──────────────────────────────────────────────────────────────────────
-async function loadBookings() {
-  const from = toDateStr(addDays(cursor,-30));
-  const to = toDateStr(addDays(cursor,37));
+async function load() {
+  const from = toDS(addDays(cursor, -30));
+  const to = toDS(addDays(cursor, 37));
   try {
-    bookings = await apiFetch(`/bookings?from=${from}&to=${to}`);
+    bookings = await api(`/bookings?from=${from}&to=${to}`);
     renderCols(); renderNowLine();
-  } catch(e) { toast('Ошибка загрузки','error'); }
+  } catch(e) { toast('Ошибка загрузки', 'err'); }
 }
 
-function getBookingsForDate(ds) { return bookings.filter(b=>b.start.startsWith(ds)); }
+function getForDate(ds) { return bookings.filter(b => b.start.startsWith(ds)); }
 
 // ── Nav ───────────────────────────────────────────────────────────────────────
-function navigate(dir) { cursor=addDays(cursor,currentView==='day'?dir:dir*7); render(); loadBookings(); }
-function goToday() { cursor=todayDate(); render(); loadBookings(); scrollToNow(); }
+function nav(d) { cursor = addDays(cursor, view === 'day' ? d : d*7); render(); load(); }
+function goToday() { cursor = localToday(); render(); load(); scrollToNow(); }
 function scrollToNow() {
-  const now=new Date();
-  document.getElementById('gridScroll').scrollTo({top:Math.max(((now.getHours()*60+now.getMinutes())/60)*SLOT_H-80,0),behavior:'smooth'});
+  const now = new Date();
+  const mins = now.getHours()*60+now.getMinutes();
+  const top = Math.max(((mins - DAY_START*60)/60)*SLOT_H - 100, 0);
+  document.getElementById('gridScroll').scrollTo({top, behavior:'smooth'});
 }
 
+// ── Listeners ─────────────────────────────────────────────────────────────────
 function setupListeners() {
-  document.getElementById('prevBtn').addEventListener('click',()=>navigate(-1));
-  document.getElementById('nextBtn').addEventListener('click',()=>navigate(1));
-  document.getElementById('todayBtn').addEventListener('click',goToday);
-  document.getElementById('adminBtn').addEventListener('click',openAdmin);
-  document.querySelectorAll('.view-tab').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      document.querySelectorAll('.view-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('prevBtn').addEventListener('click', () => nav(-1));
+  document.getElementById('nextBtn').addEventListener('click', () => nav(1));
+  document.getElementById('todayBtn').addEventListener('click', goToday);
+  document.getElementById('themeBtn').addEventListener('click', toggleTheme);
+  document.getElementById('adminBtn').addEventListener('click', openAdmin);
+  document.getElementById('fabBtn').addEventListener('click', () => {
+    const now = new Date();
+    const mins = Math.round((now.getHours()*60+now.getMinutes())/15)*15;
+    openBookModal(cursor, mins);
+  });
+
+  document.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      currentView=btn.dataset.view;
-      if (currentView==='week') { const d=cursor.getDay(); cursor=addDays(cursor,d===0?-6:1-d); }
-      render(); loadBookings();
+      view = btn.dataset.view;
+      if (view === 'week') {
+        const d = cursor.getDay();
+        cursor = addDays(cursor, d === 0 ? -6 : 1-d);
+      }
+      render(); load();
     });
   });
-  document.getElementById('fRecurType').addEventListener('change',e=>{
-    document.getElementById('fRecurCountWrap').style.display=e.target.value==='none'?'none':'block';
+
+  document.getElementById('bRecur').addEventListener('change', e => {
+    document.getElementById('bRecurCountWrap').style.display = e.target.value === 'none' ? 'none' : 'block';
   });
-  ['bookModal','editModal','detailModal','adminModal'].forEach(id=>{
-    document.getElementById(id).addEventListener('click',e=>{ if(e.target.id===id) closeModal(id); });
+
+  ['bookModal','editModal','detailModal','adminModal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', e => { if (e.target.id === id) close_(id); });
   });
-  setInterval(()=>renderNowLine(),60000);
+
+  setInterval(() => renderNowLine(), 60000);
 }
 
-function openModal(id){document.getElementById(id).classList.add('open')}
-function closeModal(id){document.getElementById(id).classList.remove('open')}
+// ── Modal helpers ─────────────────────────────────────────────────────────────
+function open_(id) { document.getElementById(id).classList.add('open'); }
+function close_(id) { document.getElementById(id).classList.remove('open'); }
 
-async function apiFetch(path,method='GET',body=null) {
-  const opts={method,headers:{'Content-Type':'application/json','X-Init-Data':initDataRaw}};
-  if(body) opts.body=JSON.stringify(body);
-  const res=await fetch(WORKER_URL+path,opts);
-  const data=await res.json();
-  if(!res.ok) throw new Error(data.detail||data.error||'Ошибка сервера');
+// ── API ───────────────────────────────────────────────────────────────────────
+async function api(path, method='GET', body=null) {
+  const opts = {method, headers: {'Content-Type':'application/json','X-Init-Data':initData}};
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(WORKER_URL + path, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || data.error || 'Ошибка сервера');
   return data;
 }
 
+// ── Toast ─────────────────────────────────────────────────────────────────────
 let toastTimer;
-function toast(msg,type='') {
-  const el=document.getElementById('toast');
-  el.textContent=msg; el.className='toast show'+(type?' '+type:'');
-  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'),2500);
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' '+type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
 }
 
-function addDays(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r}
-function todayDate(){const d=new Date();d.setHours(0,0,0,0);return d}
-function toDateStr(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
-function pad(n){return String(n).padStart(2,'0')}
-function timeToMins(t){const[h,m]=t.split(':').map(Number);return h*60+m}
-function minsToHM(t){return{h:Math.floor(t/60),m:t%60}}
-function formatDate(d,opts){return d.toLocaleDateString('ru',opts)}
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+function localToday() { const d = new Date(); d.setHours(0,0,0,0); return d; }
+function toDS(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function pad(n) { return String(n).padStart(2,'0'); }
+function t2m(t) { const [h,m] = t.split(':').map(Number); return h*60+m; }
+function minsToHM(t) { return {h:Math.floor(t/60), m:t%60}; }
+function durStr(m) {
+  if (m <= 0) return '';
+  const h = Math.floor(m/60), min = m%60;
+  return h > 0 ? (min > 0 ? `${h} ч ${min} мин` : `${h} ч`) : `${min} мин`;
+}
+function fmtDate(d, opts) { return d.toLocaleDateString('ru', opts); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
 </body>
 </html>
